@@ -57,6 +57,7 @@ Every time you change a file, raise `CACHE_VERSION` in `sw.js` (for example `br-
 
 ## Data and sources
 
-Costs: backpacker budget from Hostelz (2026); mid-range and luxury totals from 2026 travel budget guides, split by category as an estimate.
+Costs: backpacker budget from Hostelz (2026); mid-range and luxury totals from 2026 travel budget guides, split by category as an estimate. Each place has a price factor against the country average (islands and Siem Reap higher, the north of Thailand and rural towns lower), based on 2026 city-level budget guides.
+Getting around: about $2 per hour of bus travel plus a small base fare, about $12 extra for a ferry, with a separate average road speed per country. Regional flights: €40–110 one way (backpack), based on 2026 fare searches.
 Inflation: national figures for 2026. Border status: news and government travel advice, checked November 2026.
 All numbers are estimates to help you plan. Always check borders, visas and prices before you go.

@@ -11,28 +11,28 @@
   // ---------------------------------------------------------------------------
 
   // Daily cost per person in EUR from the cost sheet (incl. inflation to departure, 1 EUR = 1.16 USD).
-  // Places: [name, tags, priority 1-3, minimum nights, lat, lng, island]
+  // Places: [name, tags, priority 1-3, minimum nights, lat, lng, island, price factor vs the country average]
   const META = {
     th: {
       name: 'Thailand', code: 'TH', color: '#0F766E', ink: '#FFFFFF', bar: '#2BB3A3', dot: '#0F766E',
       sub: 'Bangkok, Chiang Mai, the islands', hub: { lat: 13.75, lng: 100.50 },
       rates: { backpack: 30.51, mid: 69.74, luxury: 139.48 },
       pool: [
-        ['Bangkok', ['city', 'party'], 3, 1, 13.75, 100.50, false],
-        ['Kanchanaburi', ['nature'], 2, 1, 14.02, 99.53, false],
-        ['Ayutthaya', ['city'], 2, 1, 14.35, 100.57, false],
-        ['Sukhothai', ['city'], 1, 1, 17.01, 99.82, false],
-        ['Chiang Mai', ['city', 'nature'], 3, 1, 18.79, 98.98, false],
-        ['Pai', ['nature', 'party'], 2, 1, 19.36, 98.44, false],
-        ['Chiang Rai', ['city', 'nature'], 1, 1, 19.91, 99.83, false],
-        ['Phuket', ['party', 'nature'], 1, 1, 7.88, 98.39, false],
-        ['Koh Phi Phi', ['party', 'nature'], 2, 1, 7.74, 98.77, true],
-        ['Krabi', ['nature'], 2, 1, 8.06, 98.92, false],
-        ['Koh Lanta', ['nature'], 1, 1, 7.62, 99.04, true],
-        ['Khao Sok', ['nature'], 2, 2, 8.91, 98.53, false],
-        ['Koh Samui', ['nature'], 1, 1, 9.51, 100.01, true],
-        ['Koh Phangan', ['party'], 3, 1, 9.73, 100.03, true],
-        ['Koh Tao', ['nature'], 2, 1, 10.10, 99.84, true]
+        ['Bangkok', ['city', 'party'], 3, 1, 13.75, 100.50, false, 1.1],
+        ['Kanchanaburi', ['nature'], 2, 1, 14.02, 99.53, false, 0.85],
+        ['Ayutthaya', ['city'], 2, 1, 14.35, 100.57, false, 0.9],
+        ['Sukhothai', ['city'], 1, 1, 17.01, 99.82, false, 0.8],
+        ['Chiang Mai', ['city', 'nature'], 3, 1, 18.79, 98.98, false, 0.85],
+        ['Pai', ['nature', 'party'], 2, 1, 19.36, 98.44, false, 0.75],
+        ['Chiang Rai', ['city', 'nature'], 1, 1, 19.91, 99.83, false, 0.85],
+        ['Phuket', ['party', 'nature'], 1, 1, 7.88, 98.39, false, 1.4],
+        ['Koh Phi Phi', ['party', 'nature'], 2, 1, 7.74, 98.77, true, 1.5],
+        ['Krabi', ['nature'], 2, 1, 8.06, 98.92, false, 1.15],
+        ['Koh Lanta', ['nature'], 1, 1, 7.62, 99.04, true, 1.15],
+        ['Khao Sok', ['nature'], 2, 2, 8.91, 98.53, false, 1.0],
+        ['Koh Samui', ['nature'], 1, 1, 9.51, 100.01, true, 1.5],
+        ['Koh Phangan', ['party'], 3, 1, 9.73, 100.03, true, 1.3],
+        ['Koh Tao', ['nature'], 2, 1, 10.10, 99.84, true, 1.25]
       ]
     },
     la: {
@@ -40,21 +40,21 @@
       sub: 'Luang Prabang, Vang Vieng, 4000 Islands', hub: { lat: 17.97, lng: 102.63 },
       rates: { backpack: 29.27, mid: 53.21, luxury: 133.03 },
       pool: [
-        ['4000 Islands', ['nature', 'party'], 3, 1, 13.95, 105.93, true],
-        ['Champasak', ['city'], 1, 1, 14.89, 105.87, false],
-        ['Pakse', ['city'], 1, 1, 15.12, 105.80, false],
-        ['Bolaven Plateau', ['nature'], 2, 2, 15.18, 106.23, false],
-        ['Tad Lo', ['nature'], 1, 1, 15.53, 106.36, false],
-        ['Savannakhet', ['city'], 1, 1, 16.55, 104.75, false],
-        ['Thakhek Loop', ['nature'], 2, 3, 17.40, 104.80, false],
-        ['Vientiane', ['city'], 1, 1, 17.97, 102.63, false],
-        ['Vang Vieng', ['party', 'nature'], 3, 1, 18.92, 102.45, false],
-        ['Phonsavan', ['nature'], 1, 1, 19.45, 103.20, false],
-        ['Luang Prabang', ['city', 'nature'], 3, 1, 19.89, 102.13, false],
-        ['Huay Xai', ['nature'], 1, 2, 20.27, 100.41, false],
-        ['Luang Namtha', ['nature'], 1, 1, 20.95, 101.40, false],
-        ['Nong Khiaw', ['nature'], 2, 1, 20.57, 102.61, false],
-        ['Muang Ngoi', ['nature'], 1, 1, 20.71, 102.68, false]
+        ['4000 Islands', ['nature', 'party'], 3, 1, 13.95, 105.93, true, 0.85],
+        ['Champasak', ['city'], 1, 1, 14.89, 105.87, false, 0.8],
+        ['Pakse', ['city'], 1, 1, 15.12, 105.80, false, 0.9],
+        ['Bolaven Plateau', ['nature'], 2, 2, 15.18, 106.23, false, 0.9],
+        ['Tad Lo', ['nature'], 1, 1, 15.53, 106.36, false, 0.8],
+        ['Savannakhet', ['city'], 1, 1, 16.55, 104.75, false, 0.85],
+        ['Thakhek Loop', ['nature'], 2, 3, 17.40, 104.80, false, 1.0],
+        ['Vientiane', ['city'], 1, 1, 17.97, 102.63, false, 1.05],
+        ['Vang Vieng', ['party', 'nature'], 3, 1, 18.92, 102.45, false, 1.0],
+        ['Phonsavan', ['nature'], 1, 1, 19.45, 103.20, false, 0.9],
+        ['Luang Prabang', ['city', 'nature'], 3, 1, 19.89, 102.13, false, 1.15],
+        ['Huay Xai', ['nature'], 1, 2, 20.27, 100.41, false, 0.9],
+        ['Luang Namtha', ['nature'], 1, 1, 20.95, 101.40, false, 0.85],
+        ['Nong Khiaw', ['nature'], 2, 1, 20.57, 102.61, false, 0.85],
+        ['Muang Ngoi', ['nature'], 1, 1, 20.71, 102.68, false, 0.8]
       ]
     },
     kh: {
@@ -62,21 +62,21 @@
       sub: 'Angkor, Phnom Penh, Koh Rong', hub: { lat: 11.56, lng: 104.92 },
       rates: { backpack: 28.92, mid: 61.34, luxury: 157.74 },
       pool: [
-        ['Battambang', ['city', 'nature'], 2, 1, 13.10, 103.20, false],
-        ['Siem Reap', ['city', 'nature'], 3, 2, 13.36, 103.86, false],
-        ['Koh Ker', ['nature'], 1, 1, 13.78, 104.54, false],
-        ['Kampong Thom', ['nature'], 1, 1, 12.71, 104.89, false],
-        ['Phnom Penh', ['city'], 3, 1, 11.56, 104.92, false],
-        ['Kampot', ['nature'], 2, 1, 10.61, 104.18, false],
-        ['Kep', ['nature'], 1, 1, 10.48, 104.32, false],
-        ['Sihanoukville', ['party'], 1, 1, 10.63, 103.52, false],
-        ['Koh Rong', ['party', 'nature'], 2, 1, 10.72, 103.24, true],
-        ['Koh Rong Samloem', ['nature'], 2, 1, 10.60, 103.30, true],
-        ['Kampong Cham', ['city'], 1, 1, 11.99, 105.46, false],
-        ['Kratie', ['nature'], 1, 1, 12.49, 106.02, false],
-        ['Mondulkiri', ['nature'], 1, 2, 12.45, 107.19, false],
-        ['Ratanakiri', ['nature'], 1, 2, 13.74, 106.99, false],
-        ['Stung Treng', ['nature'], 1, 1, 13.53, 105.97, false]
+        ['Battambang', ['city', 'nature'], 2, 1, 13.10, 103.20, false, 0.85],
+        ['Siem Reap', ['city', 'nature'], 3, 2, 13.36, 103.86, false, 1.25],
+        ['Koh Ker', ['nature'], 1, 1, 13.78, 104.54, false, 0.8],
+        ['Kampong Thom', ['nature'], 1, 1, 12.71, 104.89, false, 0.8],
+        ['Phnom Penh', ['city'], 3, 1, 11.56, 104.92, false, 1.1],
+        ['Kampot', ['nature'], 2, 1, 10.61, 104.18, false, 0.9],
+        ['Kep', ['nature'], 1, 1, 10.48, 104.32, false, 0.95],
+        ['Sihanoukville', ['party'], 1, 1, 10.63, 103.52, false, 1.0],
+        ['Koh Rong', ['party', 'nature'], 2, 1, 10.72, 103.24, true, 1.25],
+        ['Koh Rong Samloem', ['nature'], 2, 1, 10.60, 103.30, true, 1.2],
+        ['Kampong Cham', ['city'], 1, 1, 11.99, 105.46, false, 0.8],
+        ['Kratie', ['nature'], 1, 1, 12.49, 106.02, false, 0.8],
+        ['Mondulkiri', ['nature'], 1, 2, 12.45, 107.19, false, 0.9],
+        ['Ratanakiri', ['nature'], 1, 2, 13.74, 106.99, false, 0.9],
+        ['Stung Treng', ['nature'], 1, 1, 13.53, 105.97, false, 0.75]
       ]
     },
     vn: {
@@ -84,21 +84,21 @@
       sub: 'Hanoi, Ha Giang, Hoi An, Saigon', hub: { lat: 21.03, lng: 105.85 },
       rates: { backpack: 28.89, mid: 52.53, luxury: 148.84 },
       pool: [
-        ['Sapa', ['nature'], 1, 2, 22.34, 103.84, false],
-        ['Ha Giang Loop', ['nature'], 3, 3, 22.82, 104.98, false],
-        ['Hanoi', ['city', 'party'], 3, 1, 21.03, 105.85, false],
-        ['Ha Long Bay', ['nature'], 2, 1, 20.95, 107.05, false],
-        ['Cat Ba', ['nature', 'party'], 2, 1, 20.73, 107.05, true],
-        ['Ninh Binh', ['nature'], 2, 1, 20.25, 105.97, false],
-        ['Phong Nha', ['nature'], 2, 1, 17.59, 106.28, false],
-        ['Hue', ['city'], 1, 1, 16.46, 107.59, false],
-        ['Hoi An', ['city', 'party'], 3, 1, 15.88, 108.33, false],
-        ['Da Nang', ['city'], 1, 1, 16.05, 108.20, false],
-        ['Nha Trang', ['party'], 1, 1, 12.24, 109.19, false],
-        ['Da Lat', ['nature'], 2, 1, 11.94, 108.44, false],
-        ['Ho Chi Minh City', ['city', 'party'], 2, 1, 10.78, 106.70, false],
-        ['Mekong Delta', ['nature'], 1, 1, 10.03, 105.78, false],
-        ['Phu Quoc', ['nature'], 1, 1, 10.23, 103.96, true]
+        ['Sapa', ['nature'], 1, 2, 22.34, 103.84, false, 1.0],
+        ['Ha Giang Loop', ['nature'], 3, 3, 22.82, 104.98, false, 1.15],
+        ['Hanoi', ['city', 'party'], 3, 1, 21.03, 105.85, false, 1.05],
+        ['Ha Long Bay', ['nature'], 2, 1, 20.95, 107.05, false, 1.4],
+        ['Cat Ba', ['nature', 'party'], 2, 1, 20.73, 107.05, true, 1.0],
+        ['Ninh Binh', ['nature'], 2, 1, 20.25, 105.97, false, 0.9],
+        ['Phong Nha', ['nature'], 2, 1, 17.59, 106.28, false, 0.95],
+        ['Hue', ['city'], 1, 1, 16.46, 107.59, false, 0.9],
+        ['Hoi An', ['city', 'party'], 3, 1, 15.88, 108.33, false, 1.05],
+        ['Da Nang', ['city'], 1, 1, 16.05, 108.20, false, 1.0],
+        ['Nha Trang', ['party'], 1, 1, 12.24, 109.19, false, 1.0],
+        ['Da Lat', ['nature'], 2, 1, 11.94, 108.44, false, 0.9],
+        ['Ho Chi Minh City', ['city', 'party'], 2, 1, 10.78, 106.70, false, 1.1],
+        ['Mekong Delta', ['nature'], 1, 1, 10.03, 105.78, false, 0.85],
+        ['Phu Quoc', ['nature'], 1, 1, 10.23, 103.96, true, 1.3]
       ]
     }
   };
@@ -123,6 +123,15 @@
     if (!pt) return AIRPORTS[cid][0];
     return AIRPORTS[cid].reduce((a, b) => (km(b, pt) < km(a, pt) ? b : a));
   }
+
+  // Getting around. Buses cost about $2 per hour of travel plus a small base; a ferry adds about $12.
+  // Mid-range and luxury mean better buses, private transfers or domestic flights.
+  const USD_PER_EUR = 1.16;
+  const TRANSPORT_MULT = { backpack: 1, mid: 1.6, luxury: 3.5 };
+  // Average bus speed on the road in km/h: Thai highways are quick, mountain roads in Laos and Vietnam slow
+  const SPEED = { th: 60, la: 45, kh: 45, vn: 45 };
+  // One-way regional flight, per person, in EUR: [low, high]
+  const FLIGHT = { backpack: [40, 110], mid: [60, 140], luxury: [100, 220] };
 
   // Classic overland loop while the Thailand–Cambodia land border is closed
   const COUNTRY_ORDER = ['th', 'la', 'kh', 'vn'];
@@ -164,7 +173,15 @@
   }
   function poolEntry(cid, name) { return META[cid].pool.find((p) => p[0] === name); }
   function toStop(p, nights, score) {
-    return { place: p[0], tags: p[1], score: score, nights: nights, lat: p[4], lng: p[5], island: p[6] };
+    return { place: p[0], tags: p[1], score: score, nights: nights, lat: p[4], lng: p[5], island: p[6], factor: p[7] || 1 };
+  }
+  // A ground trip from a to b, optionally via a border crossing
+  function hop(a, b, style, via, speed) {
+    const dist = via ? km(a, via) + km(via, b) : km(a, b);
+    const ferry = !!((a.island || b.island) && a.place !== b.place);
+    const hrs = Math.max(1, Math.round(dist * 1.3 / (speed || 45) + (ferry ? 1.5 : 0) + (via ? 1.5 : 0)));
+    const usd = (2 + 2.2 * hrs + (ferry ? 12 : 0)) * TRANSPORT_MULT[style];
+    return { hrs: hrs, eur: usd / USD_PER_EUR, ferry: ferry };
   }
   function announce(text) { const el = $('#announce'); if (el) { el.textContent = ''; setTimeout(() => { el.textContent = text; }, 30); } }
 
@@ -352,21 +369,33 @@
   function describeRoute(s) {
     const rs = s.routeStyle;
     const budget = Number(s.maxBudget) || 0;
-    let day = 1, total = 0, totalDays = 0, backpackTotal = 0, priciest = null, weakest = null;
+    let day = 1, stay = 0, transport = 0, flights = 0, flightLow = 0, flightHigh = 0, totalDays = 0, backpackTotal = 0;
+    let priciest = null, weakest = null;
     const legs = s.order.map((cid, i) => {
       const m = META[cid];
       const list = s.stops[cid];
       const days = list.reduce((a, x) => a + x.nights, 0);
       const rate = m.rates[rs];
-      const cost = days * rate;
-      total += cost; totalDays += days; backpackTotal += days * m.rates.backpack;
-      if (days >= 4 && (!priciest || cost > priciest.cost)) priciest = { cid: cid, name: m.name, cost: cost, rate: rate };
-      if (list.length > 1) list.forEach((x) => { if (!weakest || x.score < weakest.score) weakest = { cid: cid, place: x.place, score: x.score, nights: x.nights, rate: rate }; });
+      const stayCost = list.reduce((a, x) => a + x.nights * rate * (x.factor || 1), 0);
+      const hops = list.slice(1).map((x, k) => hop(list[k], x, rs, null, SPEED[cid]));
+      const moveCost = hops.reduce((a, h) => a + h.eur, 0);
+      stay += stayCost; transport += moveCost; totalDays += days;
+      backpackTotal += list.reduce((a, x) => a + x.nights * m.rates.backpack * (x.factor || 1), 0) + list.slice(1).reduce((a, x, k) => a + hop(list[k], x, 'backpack', null, SPEED[cid]).eur, 0);
+      const perDay = days ? stayCost / days : rate;
+      if (days >= 4 && (!priciest || stayCost > priciest.cost)) priciest = { cid: cid, name: m.name, cost: stayCost, rate: perDay };
+      if (list.length > 1) list.forEach((x) => { if (!weakest || x.score < weakest.score) weakest = { cid: cid, place: x.place, score: x.score, nights: x.nights, rate: rate * (x.factor || 1) }; });
       const range = days > 0 ? 'Day ' + day + '–' + (day + days - 1) : 'No stops yet';
       day += days;
       const next = s.order[i + 1];
-      return { cid: cid, i: i, m: m, list: list, days: days, rate: rate, cost: cost, range: range, border: next ? describeBorder(s, cid, next) : null };
+      const border = next ? describeBorder(s, cid, next) : null;
+      if (border) {
+        transport += border.ground;
+        if (border.kind !== 'land') { flights += border.flightMid; flightLow += border.flightLow; flightHigh += border.flightHigh; }
+        backpackTotal += border.kind === 'land' ? border.groundBackpack : border.groundBackpack + (FLIGHT.backpack[0] + FLIGHT.backpack[1]) / 2;
+      }
+      return { cid: cid, i: i, m: m, list: list, hops: hops, days: days, rate: perDay, cost: stayCost + moveCost, stayCost: stayCost, moveCost: moveCost, range: range, border: border };
     });
+    const total = stay + transport + flights;
     const pct = budget > 0 ? total / budget : 0;
     let status;
     if (budget <= 0) status = { label: 'No budget', bg: '#F1F2F5', fg: '#5B6478', bar: '#B8BECC', text: 'Add a budget on the first screen to see whether your route fits.' };
@@ -379,7 +408,8 @@
       if (rs !== 'backpack') tips.push({ text: 'Switch the trip to Backpack', saves: eur(total - backpackTotal), action: 'save-backpack' });
       else if (weakest) tips.push({ text: 'Skip ' + weakest.place, saves: eur(weakest.nights * weakest.rate), action: 'save-skip', cid: weakest.cid, place: weakest.place });
     }
-    return { legs: legs, total: total, totalDays: totalDays, budget: budget, pct: pct, status: status, tips: tips };
+    return { legs: legs, total: total, stay: stay, transport: transport, flights: flights, flightLow: flightLow, flightHigh: flightHigh,
+      totalDays: totalDays, budget: budget, pct: pct, status: status, tips: tips };
   }
 
   function describeBorder(s, cid, next) {
@@ -389,8 +419,14 @@
     const from = lastStop ? lastStop.place : m.name;
     const to = firstNext ? firstNext.place : nm.name;
     const r = pickCrossing(cid, next, list, nextList, 'live');
+    const rs = s.routeStyle;
     if (r.kind !== 'land') {
       const ap1 = nearestAirport(cid, lastStop), ap2 = nearestAirport(next, firstNext);
+      // Getting to and from the airports by bus or taxi
+      const toAir = (p, ap, style, c) => (p && km(p, ap) > 15 ? hop(p, Object.assign({ place: ap.name }, ap), style, null, SPEED[c]).eur : 5 * TRANSPORT_MULT[style]);
+      const ground = toAir(lastStop, ap1, rs, cid) + toAir(firstNext, ap2, rs, next);
+      const groundBackpack = toAir(lastStop, ap1, 'backpack', cid) + toAir(firstNext, ap2, 'backpack', next);
+      const fl = FLIGHT[rs];
       const steps = [];
       if (lastStop && lastStop.place !== ap1.name) steps.push('Get from ' + from + ' to ' + ap1.name + ' airport');
       steps.push((steps.length ? 'fly' : 'Fly') + ' to ' + ap2.name);
@@ -399,14 +435,17 @@
         ? 'All ' + m.name + '–' + nm.name + ' land crossings have been closed since June 2025, with no reopening date (checked Nov 2026). '
         : m.name + ' and ' + nm.name + ' do not share a border. ';
       return { kind: r.kind, title: r.kind === 'closed' ? 'Land border closed' : 'No land border', name: 'Fly ' + ap1.name + ' → ' + ap2.name,
-        info: why + steps.join(', ') + '. Flight ≈ €[XX].' };
+        info: why + steps.join(', ') + '.', price: 'Flight ≈ €' + fl[0] + '–' + fl[1] + ' one way, cheapest when booked early',
+        ground: ground, groundBackpack: groundBackpack, flightLow: fl[0], flightHigh: fl[1], flightMid: (fl[0] + fl[1]) / 2 };
     }
     const c = r.c;
-    const dist = (lastStop ? km(lastStop, c) : 0) + (firstNext ? km(c, firstNext) : 0);
-    const island = (lastStop && lastStop.island) || (firstNext && firstNext.island);
-    const hrs = Math.max(3, Math.round(dist * 1.35 / 40 + 1.5 + (island ? 2 : 0)));
+    const spd = (SPEED[cid] + SPEED[next]) / 2;
+    const trip = lastStop && firstNext ? hop(lastStop, firstNext, rs, c, spd) : { hrs: 3, eur: 8 * TRANSPORT_MULT[rs] / USD_PER_EUR, ferry: false };
+    const tripBackpack = lastStop && firstNext ? hop(lastStop, firstNext, 'backpack', c, spd) : { eur: 8 / USD_PER_EUR };
     const out = { kind: 'land', title: 'Border crossing', name: c.names[cid] + ' → ' + c.names[next],
-      info: c.note + '. ' + from + ' → border → ' + to + ': ≈ ' + hrs + ' hrs' + (island ? ' incl. ferry' : '') + '.', tip: null };
+      info: c.note + '. ' + from + ' → border → ' + to + '.',
+      price: '≈ ' + trip.hrs + ' hrs' + (trip.ferry ? ' incl. ferry' : '') + ' · ≈ ' + eur(trip.eur) + ' by bus' + (rs === 'backpack' ? '' : ' or transfer') + ', visa not included',
+      ground: trip.eur, groundBackpack: tripBackpack.eur, tip: null };
     // Do you leave from a sensible place?
     let closer = null;
     list.slice(0, -1).forEach((x) => { const dd = km(x, c); if (!closer || dd < closer.d) closer = { x: x, d: dd }; });
@@ -727,7 +766,9 @@
     const stops = leg.list.map((x, k) => {
       const shown = x.tags.filter((t) => s.vibes[t])[0] || x.tags[0];
       if (!s.editing) {
-        return '<div class="stop"><div class="dot" style="background:' + m.dot + '"></div><span class="stop-name">' + esc(x.place) + '</span>' +
+        const h = k > 0 ? leg.hops[k - 1] : null;
+        return (h ? '<div class="hop">' + (h.ferry ? 'Ferry + bus' : 'Bus') + ' ≈ ' + h.hrs + (h.hrs === 1 ? ' hr' : ' hrs') + ' · ' + eur(h.eur) + '</div>' : '') +
+          '<div class="stop"><div class="dot" style="background:' + m.dot + '"></div><span class="stop-name">' + esc(x.place) + '</span>' +
           '<span class="tag">' + TAG_LABEL[shown] + '</span><span class="nights">' + x.nights + 'n</span></div>';
       }
       return '<div class="stop-edit"><div class="line"><div style="display:flex;align-items:center;gap:10px;min-width:0"><div class="dot" style="background:' + m.dot + '"></div><span class="stop-name">' + esc(x.place) + '</span></div>' +
@@ -754,7 +795,8 @@
     if (leg.border) {
       const b = leg.border;
       border = '<div class="border' + (b.kind === 'closed' ? ' closed' : '') + '"><div class="border-icon">' + (b.kind === 'land' ? ICON.border : ICON.plane) + '</div>' +
-        '<div class="border-text"><span class="border-title">' + b.title + '</span><span class="border-name">' + esc(b.name) + '</span><span class="border-info">' + esc(b.info) + '</span></div></div>';
+        '<div class="border-text"><span class="border-title">' + b.title + '</span><span class="border-name">' + esc(b.name) + '</span><span class="border-info">' + esc(b.info) + '</span>' +
+        (b.price ? '<span class="border-price">' + esc(b.price) + '</span>' : '') + '</div></div>';
       if (b.tip) {
         border += '<div class="border-tip"><span><strong>Tip:</strong> ' + esc(b.tip.text) + '</span>' +
           '<button class="btn-outline" data-action="' + b.tip.action + '" data-cid="' + b.tip.cid + '" data-place="' + esc(b.tip.place) + '">' + esc(b.tip.label) + '</button></div>';
@@ -765,7 +807,7 @@
           '<button class="arrow" style="background:' + arrowBg + ';color:' + m.ink + '" data-action="country-move" data-i="' + leg.i + '" data-d="-1" aria-label="Move ' + m.name + ' earlier">' + ICON.up + '</button>' +
           '<button class="arrow" style="background:' + arrowBg + ';color:' + m.ink + '" data-action="country-move" data-i="' + leg.i + '" data-d="1" aria-label="Move ' + m.name + ' later">' + ICON.down + '</button></div>' : '') +
         '<div style="flex-grow:1;display:flex;flex-direction:column;gap:2px"><span class="leg-name">' + m.name + '</span><span class="leg-sub">' + leg.range + '</span></div>' +
-        '<div style="display:flex;flex-direction:column;gap:2px;text-align:right"><span class="leg-cost">' + eur(leg.cost) + '</span><span class="leg-sub">' + leg.days + ' days · ' + eur(leg.rate) + '/day</span></div></div>' +
+        '<div style="display:flex;flex-direction:column;gap:2px;text-align:right"><span class="leg-cost">' + eur(leg.cost) + '</span><span class="leg-sub">' + leg.days + ' days · ≈ ' + eur(leg.days ? leg.cost / leg.days : leg.rate) + '/day</span></div></div>' +
       '<div class="leg-body">' + (leg.list.length ? stops : '<p class="empty">No stops yet. Add a place below.</p>') + add + '</div>' +
       border + '</div>';
   }
@@ -812,6 +854,8 @@
       (s.fromLink ? '<div class="banner"><strong>Someone shared this route with you.</strong> Tap Customize to tweak it, or Change plan to make your own.</div>' : '') +
       '<section class="summary"><div class="summary-row"><div><span class="eyebrow">Your route</span><div class="big">' + d.totalDays + ' days</div></div>' +
         '<div style="text-align:right"><div class="muted-light">Estimated total</div><div class="mid">' + eur(d.total) + '</div><div class="muted-light">≈ ' + eur(d.totalDays ? d.total / d.totalDays : 0) + ' a day</div></div></div>' +
+        '<div class="breakdown"><span><b>' + eur(d.stay) + '</b> sleeping, food &amp; activities</span><span><b>' + eur(d.transport) + '</b> buses &amp; ferries</span>' +
+          (d.flights ? '<span><b>' + eur(d.flights) + '</b> flights (€' + Math.round(d.flightLow) + '–' + Math.round(d.flightHigh) + ')</span>' : '') + '</div>' +
         '<div class="days-bar" aria-hidden="true">' + bar + '</div>' +
         '<div class="chips">' + chips.map((c) => '<span class="chip">' + esc(c) + '</span>').join('') + '</div>' +
         '<button class="btn-yellow" data-action="share">' + ICON.share + ' Share this route</button></section>' +
@@ -823,7 +867,7 @@
         '<button class="edit-btn' + (s.editing ? ' on' : '') + '" data-action="edit">' + (s.editing ? 'Done' : 'Customize') + '</button></div>' +
       d.legs.map(renderLeg).join('') +
       renderFeedback() +
-      '<section class="fineprint"><strong>How we estimate costs</strong><span>Daily costs per country and travel style from backpacker budget sources, adjusted for local inflation and the euro–dollar rate. Excludes flights, visas and big one-off activities. Travel times are rough estimates from distance. Border status checked November 2026: borders and visa rules change, so always check before you go.</span><span>Prices as of October 2026</span></section>' +
+      '<section class="fineprint"><strong>How we estimate costs</strong><span>Daily costs per country and travel style from backpacker budget sources, adjusted for local inflation and the euro–dollar rate, and for each place (islands cost more, small towns less). Buses, ferries and flights between countries are included as estimates. Not included: your flight to and from Asia, visas and big one-off activities like diving courses or the Angkor pass. Travel times are rough estimates from distance. Border status checked November 2026: borders and visa rules change, so always check before you go.</span><span>Prices as of October 2026</span></section>' +
       '<div class="footer-links" style="padding-top:12px"><button data-action="info">About</button><button data-action="info" data-focus="privacy">Privacy</button>' +
         '<button data-action="reset"' + (s.confirmReset ? ' class="danger"' : '') + '>' + (s.confirmReset ? 'Tap again to clear everything' : 'Start over') + '</button></div>' +
       '<div class="route-end"></div></div>';
