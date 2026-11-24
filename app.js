@@ -520,12 +520,14 @@
       editing: false, adding: null, query: '',
       sheet: null, copied: false,
       feedback: null, fbText: '', fbDone: null,
-      fromLink: false
+      fromLink: false,
+      confirmReset: false
     };
   }
 
   let state = defaultState();
   let timers = [];
+  let resetTimer = null;
 
   function save() {
     if (state.fromLink) return; // opening someone else's link never overwrites your own route
@@ -642,7 +644,8 @@
         '<span class="hint">Leave out your flight to Asia. We check whether your route fits and show you where to save.</span></div></section>' +
       '<div style="flex-grow:1;min-height:24px"></div>' +
       '<div class="cta-bar"><div class="cta" id="plan-cta">' + renderPlanCta() + '</div></div>' +
-      '<div class="footer-links"><button data-action="info">About</button><button data-action="info" data-focus="privacy">Privacy</button></div>' +
+      '<div class="footer-links"><button data-action="info">About</button><button data-action="info" data-focus="privacy">Privacy</button>' +
+        '<button data-action="reset"' + (s.confirmReset ? ' class="danger"' : '') + '>' + (s.confirmReset ? 'Tap again to clear everything' : 'Start over') + '</button></div>' +
     '</div>';
   }
 
@@ -884,6 +887,23 @@
       case 'pace': update({ pace: el.dataset.id }); break;
       case 'vibe': { const n = Object.assign({}, s.vibes); n[el.dataset.id] = !n[el.dataset.id]; update({ vibes: n }); break; }
       case 'generate': generate(); break;
+      case 'reset': {
+        if (!s.confirmReset) {
+          update({ confirmReset: true });
+          clearTimeout(resetTimer);
+          resetTimer = setTimeout(() => { if (state.confirmReset) update({ confirmReset: false }); }, 4000);
+          break;
+        }
+        clearTimeout(resetTimer);
+        clearTimers();
+        try { localStorage.removeItem(STORE_KEY); } catch (err) { /* nothing saved */ }
+        try { history.replaceState(null, '', location.pathname + location.search); } catch (err) { /* fine */ }
+        state = defaultState();
+        render();
+        window.scrollTo(0, 0);
+        announce('Cleared. You can start a new route.');
+        break;
+      }
       case 'back': clearTimers(); update({ screen: 'plan', fromLink: false, sheet: null, editing: false, adding: null }); break;
       case 'info': {
         update({ sheet: 'info' });
