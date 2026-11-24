@@ -949,7 +949,7 @@
       '<div class="footer-links" style="padding-top:12px"><button data-action="info">About</button><button data-action="info" data-focus="privacy">Privacy</button>' +
         '<button data-action="reset"' + (s.confirmReset ? ' class="danger"' : '') + '>' + (s.confirmReset ? 'Tap again to clear everything' : 'Start over') + '</button></div>' +
       '<div class="route-end"></div>' +
-      (s.editing ? '' : '<button class="map-fab" data-action="view-map">' + ICON.map + ' Map</button>') + '</div>';
+      (s.adding ? '' : '<button class="map-fab" data-action="view-map">' + ICON.map + ' Map</button>') + '</div>';
   }
 
   function renderShareSheet() {
@@ -1324,7 +1324,7 @@
         break;
       }
       case 'back': clearTimers(); update({ screen: 'plan', fromLink: false, sheet: null, editing: false, adding: null, view: 'list' }); break;
-      case 'view-map': mapFocus = false; update({ view: 'map', editing: false, adding: null }); track('map-opened'); { const b = $('.seg [data-action="view-list"]'); if (b) b.focus(); } break;
+      case 'view-map': mapFocus = false; update({ view: 'map', adding: null }); track('map-opened'); { const b = $('.seg [data-action="view-list"]'); if (b) b.focus(); } break;
       case 'view-list': update({ view: 'list' }); { const b = $('.map-fab'); if (b) b.focus({ preventScroll: true }); } break;
       case 'map-sel': selectStop(k); break;
       case 'map-prev': selectStop(s.mapSel - 1); break;
