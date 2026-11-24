@@ -109,6 +109,14 @@
     kh: [{ name: 'Phnom Penh', lat: 11.35, lng: 104.85 }, { name: 'Siem Reap', lat: 13.37, lng: 104.22 }],
     vn: [{ name: 'Hanoi', lat: 21.22, lng: 105.81 }, { name: 'Da Nang', lat: 16.04, lng: 108.20 }, { name: 'Ho Chi Minh City', lat: 10.82, lng: 106.66 }, { name: 'Phu Quoc', lat: 10.17, lng: 103.99 }]
   };
+  // The places most people go to. They always count a little, and a lot when you only have a few days.
+  const MUST_SEE = {
+    th: { 'Bangkok': 2, 'Chiang Mai': 1 },
+    la: { 'Luang Prabang': 2, 'Vang Vieng': 1, '4000 Islands': 1 },
+    kh: { 'Siem Reap': 2, 'Phnom Penh': 1 },
+    vn: { 'Hanoi': 2, 'Hoi An': 2, 'Ho Chi Minh City': 1, 'Ha Long Bay': 1 }
+  };
+
   // Where you land when you fly in from home
   const ARRIVAL = { th: ['Bangkok'], la: ['Vientiane', 'Luang Prabang'], kh: ['Phnom Penh', 'Siem Reap'], vn: ['Hanoi', 'Ho Chi Minh City'] };
   function nearestAirport(cid, pt) {
@@ -277,6 +285,8 @@
     const m = META[cid];
     const picked = s.vibes;
     const anyVibe = picked.nature || picked.city || picked.party;
+    // 0 for 8+ days, up to 1 for a very short stay
+    const shortness = Math.max(0, Math.min(1, (8 - days) / 6));
     const scored = m.pool.map((p, idx) => {
       const matches = p[1].filter((t) => picked[t]).length;
       const pt = { lat: p[4], lng: p[5] };
@@ -284,16 +294,28 @@
       // Close to where you enter or leave: bonus. Far away: costs more the shorter your stay
       const near = anchors.length ? 4 * Math.max(0, 1 - dist / 500) : 0;
       const far = anchors.length ? dist / (days * 40) : 0;
-      return { idx: idx, p: p, min: p[3] || 1, score: p[2] * 2 + (anyVibe ? matches * 3 : 0) + near - far };
+      const mustLevel = MUST_SEE[cid][p[0]] || 0;
+      const base = p[2] * 2 + (anyVibe ? matches * 3 : 0) + near - far + mustLevel * 1.5;
+      // The short-stay boost decides which places make it, not how the nights are split
+      return { idx: idx, p: p, pt: pt, min: p[3] || 1, base: base, score: base + mustLevel * 6 * shortness };
     }).filter((c) => c.min <= days);
     const avg = s.pace === 'relaxed' ? 4 : 2.5;
-    const n = Math.max(1, Math.min(scored.length, days, Math.round(days / avg)));
+    const n = days <= 3 ? 1 : Math.max(1, Math.min(scored.length, days, Math.round(days / avg)));
+    // Pick one at a time; every next place counts for less the further it is from what you already picked
     const chosen = [];
     let used = 0;
-    scored.slice().sort((a, b) => b.score - a.score || a.idx - b.idx).forEach((c) => {
-      if (chosen.length < n && used + c.min <= days) { chosen.push(c); used += c.min; }
-    });
-    const w = (c) => Math.max(1, c.score);
+    while (chosen.length < n) {
+      let best = null, bestScore = -Infinity;
+      scored.forEach((c) => {
+        if (chosen.indexOf(c) >= 0 || used + c.min > days) return;
+        const spread = chosen.length ? Math.min.apply(null, chosen.map((x) => km(x.pt, c.pt))) / (days * 50) : 0;
+        const sc = c.score - spread;
+        if (sc > bestScore || (sc === bestScore && best && c.idx < best.idx)) { best = c; bestScore = sc; }
+      });
+      if (!best) break;
+      chosen.push(best); used += best.min;
+    }
+    const w = (c) => Math.max(1, c.base);
     const sumW = chosen.reduce((a, c) => a + w(c), 0);
     chosen.forEach((c) => { c.nights = Math.max(c.min, Math.floor(days * w(c) / sumW)); });
     let total = chosen.reduce((a, c) => a + c.nights, 0);
@@ -311,14 +333,15 @@
   function buildRoute(s) {
     const order = COUNTRY_ORDER.filter((c) => s.days[c] > 0);
     const stops = { th: [], kh: [], la: [], vn: [] };
-    order.forEach((cid) => { stops[cid] = selectStops(s, cid, s.days[cid], []); });
+    const arrivalPts = (cid) => AIRPORTS[cid].filter((a) => ARRIVAL[cid].indexOf(a.name) >= 0);
+    order.forEach((cid, i) => { stops[cid] = selectStops(s, cid, s.days[cid], i === 0 ? arrivalPts(cid) : []); });
     const draft = { order: order, stops: stops };
     // 1. rough crossings from a first pick; 2. pick again near those crossings and order each country; 3. settle on the real ends
     const ends1 = {};
     order.forEach((cid) => { ends1[cid] = routeEnds(draft, cid, 'set'); });
     order.forEach((cid) => {
       const e = ends1[cid];
-      const anchors = [e.entry, e.exit].filter((x) => x && typeof x === 'object');
+      const anchors = [e.entry, e.exit].filter((x) => x && typeof x === 'object').concat(e.entry === 'arrive' ? arrivalPts(cid) : []);
       stops[cid] = arrange(cid, selectStops(s, cid, s.days[cid], anchors), e.entry, e.exit);
     });
     order.forEach((cid) => { const e = routeEnds(draft, cid, 'path'); stops[cid] = arrange(cid, stops[cid], e.entry, e.exit); });
