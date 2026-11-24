@@ -801,6 +801,8 @@
       d.legs.map(renderLeg).join('') +
       renderFeedback() +
       '<section class="fineprint"><strong>How we estimate costs</strong><span>Daily costs per country and travel style from backpacker budget sources, adjusted for local inflation and the euro–dollar rate. Excludes flights, visas and big one-off activities. Travel times are rough estimates from distance. Border status checked November 2026: borders and visa rules change, so always check before you go.</span><span>Prices as of October 2026</span></section>' +
+      '<div class="footer-links" style="padding-top:12px"><button data-action="info">About</button><button data-action="info" data-focus="privacy">Privacy</button>' +
+        '<button data-action="reset"' + (s.confirmReset ? ' class="danger"' : '') + '>' + (s.confirmReset ? 'Tap again to clear everything' : 'Start over') + '</button></div>' +
       '<div class="route-end"></div></div>';
   }
 
