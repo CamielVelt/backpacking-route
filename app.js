@@ -102,6 +102,20 @@
       ]
     }
   };
+  // Airports with flights between the four countries, used when you arrive or leave by plane
+  const AIRPORTS = {
+    th: [{ name: 'Bangkok', lat: 13.69, lng: 100.75 }, { name: 'Chiang Mai', lat: 18.77, lng: 98.96 }, { name: 'Phuket', lat: 8.11, lng: 98.31 }, { name: 'Krabi', lat: 8.10, lng: 98.98 }, { name: 'Koh Samui', lat: 9.55, lng: 100.06 }],
+    la: [{ name: 'Vientiane', lat: 17.99, lng: 102.56 }, { name: 'Luang Prabang', lat: 19.90, lng: 102.16 }, { name: 'Pakse', lat: 15.13, lng: 105.78 }],
+    kh: [{ name: 'Phnom Penh', lat: 11.35, lng: 104.85 }, { name: 'Siem Reap', lat: 13.37, lng: 104.22 }],
+    vn: [{ name: 'Hanoi', lat: 21.22, lng: 105.81 }, { name: 'Da Nang', lat: 16.04, lng: 108.20 }, { name: 'Ho Chi Minh City', lat: 10.82, lng: 106.66 }, { name: 'Phu Quoc', lat: 10.17, lng: 103.99 }]
+  };
+  // Where you land when you fly in from home
+  const ARRIVAL = { th: ['Bangkok'], la: ['Vientiane', 'Luang Prabang'], kh: ['Phnom Penh', 'Siem Reap'], vn: ['Hanoi', 'Ho Chi Minh City'] };
+  function nearestAirport(cid, pt) {
+    if (!pt) return AIRPORTS[cid][0];
+    return AIRPORTS[cid].reduce((a, b) => (km(b, pt) < km(a, pt) ? b : a));
+  }
+
   // Classic overland loop while the Thailand–Cambodia land border is closed
   const COUNTRY_ORDER = ['th', 'la', 'kh', 'vn'];
   const TAG_LABEL = { nature: 'Nature', city: 'City', party: 'Party' };
@@ -225,6 +239,40 @@
     return seq;
   }
 
+  function pathCost(seq, start, end) {
+    if (!seq.length) return 0;
+    let t = (start ? km(start, seq[0]) : 0) + (end ? km(seq[seq.length - 1], end) : 0);
+    for (let i = 0; i < seq.length - 1; i++) t += km(seq[i], seq[i + 1]);
+    return t;
+  }
+
+  // Order a country's stops between how you arrive and how you leave.
+  // entry: a crossing point, 'fly' (pick the airport that fits best) or 'arrive' (first country: a big international airport)
+  // exit: a crossing point, 'fly' or null (free)
+  function arrange(cid, list, entry, exit) {
+    if (list.length < 2) return list.slice();
+    const starts = entry === 'arrive' ? AIRPORTS[cid].filter((a) => ARRIVAL[cid].indexOf(a.name) >= 0) : (entry === 'fly' ? AIRPORTS[cid] : [entry]);
+    const ends = exit === 'fly' ? AIRPORTS[cid] : [exit];
+    let best = null;
+    starts.forEach((a) => ends.forEach((b) => {
+      const seq = orderStops(list, a, b);
+      const c = pathCost(seq, a, b);
+      if (!best || c < best.c) best = { seq: seq, c: c };
+    }));
+    return best.seq;
+  }
+
+  // How you arrive in and leave a country in the current route
+  function routeEnds(s, cid, mode) {
+    const i = s.order.indexOf(cid);
+    const prev = s.order[i - 1], next = s.order[i + 1];
+    const viaLand = (a, b) => { const r = pickCrossing(a, b, s.stops[a], s.stops[b], mode); return r.kind === 'land' ? r.c : null; };
+    return {
+      entry: prev ? (viaLand(prev, cid) || 'fly') : 'arrive',
+      exit: next ? (viaLand(cid, next) || 'fly') : null
+    };
+  }
+
   function selectStops(s, cid, days, anchors) {
     const m = META[cid];
     const picked = s.vibes;
@@ -264,22 +312,16 @@
     const order = COUNTRY_ORDER.filter((c) => s.days[c] > 0);
     const stops = { th: [], kh: [], la: [], vn: [] };
     order.forEach((cid) => { stops[cid] = selectStops(s, cid, s.days[cid], []); });
-    const pass = (mode) => order.slice(0, -1).map((a, i) => pickCrossing(a, order[i + 1], stops[a], stops[order[i + 1]], mode));
-    const ends = (cross, i, cid) => {
-      const inn = i > 0 ? cross[i - 1] : null;
-      const out = i < order.length - 1 ? cross[i] : null;
-      // Arriving or leaving by plane: start / end near the main airport
-      const entry = inn && inn.kind === 'land' ? inn.c : META[cid].hub;
-      const exit = out ? (out.kind === 'land' ? out.c : META[cid].hub) : null;
-      return { entry: entry, exit: exit };
-    };
-    let cross = pass('set');
-    order.forEach((cid, i) => {
-      const e = ends(cross, i, cid);
-      stops[cid] = orderStops(selectStops(s, cid, s.days[cid], [e.entry, e.exit].filter(Boolean)), e.entry, e.exit);
+    const draft = { order: order, stops: stops };
+    // 1. rough crossings from a first pick; 2. pick again near those crossings and order each country; 3. settle on the real ends
+    const ends1 = {};
+    order.forEach((cid) => { ends1[cid] = routeEnds(draft, cid, 'set'); });
+    order.forEach((cid) => {
+      const e = ends1[cid];
+      const anchors = [e.entry, e.exit].filter((x) => x && typeof x === 'object');
+      stops[cid] = arrange(cid, selectStops(s, cid, s.days[cid], anchors), e.entry, e.exit);
     });
-    cross = pass('path');
-    order.forEach((cid, i) => { const e = ends(cross, i, cid); stops[cid] = orderStops(stops[cid], e.entry, e.exit); });
+    order.forEach((cid) => { const e = routeEnds(draft, cid, 'path'); stops[cid] = arrange(cid, stops[cid], e.entry, e.exit); });
     return { order: order, stops: stops };
   }
 
@@ -324,13 +366,17 @@
     const from = lastStop ? lastStop.place : m.name;
     const to = firstNext ? firstNext.place : nm.name;
     const r = pickCrossing(cid, next, list, nextList, 'live');
-    if (r.kind === 'closed') {
-      return { kind: 'closed', title: 'Land border closed', name: 'Fly ' + m.name + ' → ' + nm.name,
-        info: 'All ' + m.name + '–' + nm.name + ' land crossings have been closed since June 2025, with no reopening date (checked Nov 2026). Fly from the airport nearest ' + from + ' to ' + to + ' · ≈ €[XX]' };
-    }
-    if (r.kind === 'none') {
-      return { kind: 'none', title: 'No land border', name: 'Fly ' + m.name + ' → ' + nm.name,
-        info: m.name + ' and ' + nm.name + ' do not share a border. Fly from the airport nearest ' + from + ' to ' + to + ' · ≈ €[XX]' };
+    if (r.kind !== 'land') {
+      const ap1 = nearestAirport(cid, lastStop), ap2 = nearestAirport(next, firstNext);
+      const steps = [];
+      if (lastStop && lastStop.place !== ap1.name) steps.push('Get from ' + from + ' to ' + ap1.name + ' airport');
+      steps.push((steps.length ? 'fly' : 'Fly') + ' to ' + ap2.name);
+      if (firstNext && firstNext.place !== ap2.name) steps.push('then on to ' + to);
+      const why = r.kind === 'closed'
+        ? 'All ' + m.name + '–' + nm.name + ' land crossings have been closed since June 2025, with no reopening date (checked Nov 2026). '
+        : m.name + ' and ' + nm.name + ' do not share a border. ';
+      return { kind: r.kind, title: r.kind === 'closed' ? 'Land border closed' : 'No land border', name: 'Fly ' + ap1.name + ' → ' + ap2.name,
+        info: why + steps.join(', ') + '. Flight ≈ €[XX].' };
     }
     const c = r.c;
     const dist = (lastStop ? km(lastStop, c) : 0) + (firstNext ? km(c, firstNext) : 0);
@@ -465,10 +511,10 @@
   function defaultState() {
     return {
       screen: 'plan',
-      days: { th: 10, kh: 12, la: 20, vn: 25 },
+      days: { th: 0, kh: 0, la: 0, vn: 0 },
       style: 'backpack', pace: 'active',
       vibes: { nature: true, city: false, party: true },
-      maxBudget: '2500',
+      maxBudget: '',
       loadStep: 0,
       routeStyle: 'backpack', order: [], stops: { th: [], kh: [], la: [], vn: [] },
       editing: false, adding: null, query: '',
@@ -567,11 +613,11 @@
       const m = META[id];
       const on = s.days[id] > 0;
       return '<div class="country-row">' +
-        '<div class="badge' + (on ? '' : ' off') + '"' + (on ? ' style="background:' + m.color + ';color:' + m.ink + '"' : '') + '>' + m.code + '</div>' +
+        '<div class="badge' + (on ? '' : ' off') + '" id="badge-' + id + '"' + (on ? ' style="background:' + m.color + ';color:' + m.ink + '"' : '') + '>' + m.code + '</div>' +
         '<div class="country-text"><span class="country-name">' + m.name + '</span><span class="hint">' + esc(m.sub) + '</span></div>' +
         '<div class="stepper">' +
           '<button class="step" data-action="days" data-cid="' + id + '" data-d="-1" aria-label="One day less in ' + m.name + '">−</button>' +
-          '<span class="step-val" aria-label="' + s.days[id] + ' days in ' + m.name + '">' + s.days[id] + '</span>' +
+          '<input class="step-input" id="days-' + id + '" data-input="days" data-cid="' + id + '" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="90" value="' + s.days[id] + '" aria-label="Days in ' + m.name + '">' +
           '<button class="step plus" data-action="days" data-cid="' + id + '" data-d="1" aria-label="One day more in ' + m.name + '">+</button>' +
         '</div></div>';
     }).join('');
@@ -586,7 +632,7 @@
         '<button class="icon-btn" data-action="info" aria-label="About this app">' + ICON.info + '</button></header>' +
       '<section class="hero"><span class="eyebrow">Southeast Asia overland</span><h1>Plan your backpacking route in one minute</h1>' +
         '<p>Pick your countries and days. We work out the route, the border crossings and your daily budget.</p></section>' +
-      '<section class="block"><h2>1. Countries &amp; days</h2>' + countries + '<span class="hint">Set a country to 0 days to skip it.</span></section>' +
+      '<section class="block"><h2>1. Countries &amp; days</h2>' + countries + '<span class="hint">Tap a number to type it, or use − and +. Leave a country at 0 to skip it.</span></section>' +
       '<section class="block"><h2>2. Travel style</h2><div class="pills three">' + styles + '</div></section>' +
       '<section class="block"><h2>3. Pace</h2><div class="pills two">' + paces + '</div></section>' +
       '<section class="block"><div class="block-head"><h2>4. What are you into?</h2><span class="hint">pick any</span></div><div class="pills three">' + vibes + '</div></section>' +
@@ -605,8 +651,9 @@
     const planDays = COUNTRY_ORDER.reduce((a, k) => a + s.days[k], 0);
     const count = COUNTRY_ORDER.filter((k) => s.days[k] > 0).length;
     const budget = Number(s.maxBudget) || 0;
-    return '<div style="min-width:0"><div class="cta-days">' + planDays + ' days</div>' +
-      '<div class="cta-sub">' + count + (count === 1 ? ' country · ' : ' countries · ') + STYLE_LABEL[s.style] + ' · ' + (budget > 0 ? eur(budget) : 'no budget set') + '</div></div>' +
+    const sub = planDays ? count + (count === 1 ? ' country · ' : ' countries · ') + STYLE_LABEL[s.style] + ' · ' + (budget > 0 ? eur(budget) : 'no budget set') : 'Add days to at least one country';
+    return '<div style="min-width:0"><div class="cta-days">' + planDays + (planDays === 1 ? ' day' : ' days') + '</div>' +
+      '<div class="cta-sub">' + sub + '</div></div>' +
       '<button class="btn-yellow" data-action="generate"' + (planDays ? '' : ' disabled') + '>Make my route ' + ICON.arrowR + '</button>';
   }
 
@@ -871,7 +918,14 @@
         const i = parseInt(el.dataset.i, 10), j = i + parseInt(el.dataset.d, 10);
         if (j < 0 || j >= s.order.length) break;
         const o = s.order.slice(); const t = o[i]; o[i] = o[j]; o[j] = t;
-        update({ order: o });
+        const stops = Object.assign({}, s.stops);
+        const draft = { order: o, stops: stops };
+        const from = Math.max(0, Math.min(i, j) - 1), to = Math.min(o.length - 1, Math.max(i, j) + 1);
+        ['set', 'live'].forEach((mode) => {
+          for (let x = from; x <= to; x++) { const c = o[x]; const e = routeEnds(draft, c, mode); stops[c] = arrange(c, stops[c], e.entry, e.exit); }
+        });
+        update({ order: o, stops: stops });
+        announce(META[o[j]].name + ' moved. Stops re-ordered for the new arrival.');
         break;
       }
       case 'stop-inc': updStops(cid, (l) => { l[k] = Object.assign({}, l[k], { nights: Math.min(30, l[k].nights + 1) }); return l; }); break;
@@ -911,20 +965,10 @@
     }
   }
 
-  // Where you enter and leave a country: a border crossing, or the main airport when you fly
-  function countryEnds(cid) {
-    const i = state.order.indexOf(cid);
-    const prev = state.order[i - 1], next = state.order[i + 1];
-    const viaLand = (a, b) => { const r = pickCrossing(a, b, state.stops[a], state.stops[b], 'live'); return r.kind === 'land' ? r.c : null; };
-    return {
-      start: prev ? (viaLand(prev, cid) || META[cid].hub) : META[cid].hub,
-      end: next ? (viaLand(cid, next) || META[cid].hub) : null
-    };
-  }
-
   function addPlace(cid, p) {
     if (!p) return;
-    const ends = countryEnds(cid);
+    const e = routeEnds(state, cid, 'live');
+    const ends = { start: typeof e.entry === 'object' ? e.entry : null, end: e.exit && typeof e.exit === 'object' ? e.exit : null };
     updStops(cid, (l) => {
       const item = toStop(p, Math.max(2, p[3] || 1), p[2] * 2);
       // Put it where it adds the least travel, counting the way in and out of the country
@@ -967,7 +1011,21 @@
     const el = e.target;
     const kind = el.dataset && el.dataset.input;
     if (!kind) return;
-    if (kind === 'budget') {
+    if (kind === 'days') {
+      const cid = el.dataset.cid;
+      const n = Object.assign({}, state.days);
+      const v = parseInt(el.value, 10);
+      n[cid] = isNaN(v) ? 0 : Math.max(0, Math.min(90, v));
+      update({ days: n }, 'quiet');
+      const badge = document.getElementById('badge-' + cid);
+      if (badge) {
+        const on = n[cid] > 0;
+        badge.className = 'badge' + (on ? '' : ' off');
+        badge.style.background = on ? META[cid].color : '';
+        badge.style.color = on ? META[cid].ink : '';
+      }
+      const cta = $('#plan-cta'); if (cta) cta.innerHTML = renderPlanCta();
+    } else if (kind === 'budget') {
       update({ maxBudget: el.value }, 'quiet');
       const cta = $('#plan-cta'); if (cta) cta.innerHTML = renderPlanCta();
     } else if (kind === 'search') {
@@ -978,6 +1036,11 @@
       update({ fbText: el.value }, 'quiet');
       const btn = $('#fb-send'); if (btn) btn.disabled = !el.value.trim();
     }
+  }
+
+  function onChange(e) {
+    const el = e.target;
+    if (el.dataset && el.dataset.input === 'days' && String(state.days[el.dataset.cid]) !== el.value) el.value = state.days[el.dataset.cid];
   }
 
   function onKeydown(e) {
@@ -1002,6 +1065,18 @@
   document.addEventListener('click', onClick);
   document.addEventListener('input', onInput);
   document.addEventListener('keydown', onKeydown);
+  document.addEventListener('change', onChange);
+  // Select the whole number when you tap it, so typing replaces it
+  document.addEventListener('focusin', (e) => { if (e.target.dataset && e.target.dataset.input === 'days') { try { e.target.select(); } catch (err) { /* fine */ } } });
+
+  // iPhone: two quick taps on a button can still zoom the page. Treat the second tap as a normal tap instead.
+  let lastTap = 0;
+  document.addEventListener('touchend', (e) => {
+    const btn = e.target.closest('button, .btn-wa');
+    const now = Date.now();
+    if (btn && now - lastTap < 350 && !btn.disabled) { e.preventDefault(); btn.click(); }
+    lastTap = now;
+  }, { passive: false });
   window.addEventListener('hashchange', () => { if (/[#&]r=/.test(location.hash)) { state = defaultState(); restore(); render(); window.scrollTo(0, 0); } });
   initStats();
   if ('serviceWorker' in navigator && location.protocol === 'https:') {

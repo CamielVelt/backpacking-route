@@ -1,6 +1,6 @@
 // Service worker: keeps the app working offline.
 // Raise CACHE_VERSION every time you change a file, so phones fetch the new version.
-const CACHE_VERSION = 'br-v2';
+const CACHE_VERSION = 'br-v3';
 const APP_FILES = [
   './',
   './index.html',
@@ -37,24 +37,14 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   // Only our own files; feedback and stats always go straight to the network
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
-
-  if (req.mode === 'navigate') {
-    // Pages: try the network first so updates arrive, fall back to the saved copy offline
-    event.respondWith(
-      fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_VERSION).then((cache) => cache.put('./index.html', copy));
-        return res;
-      }).catch(() => caches.match('./index.html'))
-    );
-    return;
-  }
-
-  // Everything else: saved copy first, network as backup
+  // Online: always the newest version (and save it). Offline: the saved copy.
   event.respondWith(
-    caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE_VERSION).then((cache) => cache.put(req, copy)); }
+    fetch(req).then((res) => {
+      if (res.ok) {
+        const copy = res.clone();
+        caches.open(CACHE_VERSION).then((cache) => cache.put(req.mode === 'navigate' ? './index.html' : req, copy));
+      }
       return res;
-    }))
+    }).catch(() => caches.match(req).then((hit) => hit || (req.mode === 'navigate' ? caches.match('./index.html') : undefined)))
   );
 });

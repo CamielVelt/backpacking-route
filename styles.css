@@ -22,7 +22,8 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+html, body { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+* { touch-action: manipulation; }
 body {
   margin: 0;
   background: #E9E7E1;
@@ -85,6 +86,10 @@ a { color: var(--ink); }
 .step { width: 44px; height: 44px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-size: 20px; line-height: 1; }
 .step.plus { border: none; background: var(--ink); color: #fff; }
 .step-val { min-width: 30px; text-align: center; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
+.step-input { width: 48px; height: 44px; padding: 0; border: 1.5px solid transparent; border-radius: 10px; background: transparent; text-align: center; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }
+.step-input:hover { border-color: var(--line); }
+.step-input:focus { border-color: var(--ink); background: #fff; outline: none; }
+.step-input::-webkit-outer-spin-button, .step-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 .pills { display: grid; gap: 8px; }
 .pills.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
