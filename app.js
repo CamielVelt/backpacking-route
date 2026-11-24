@@ -133,6 +133,11 @@
   // One-way regional flight, per person, in EUR: [low, high]
   const FLIGHT = { backpack: [40, 110], mid: [60, 140], luxury: [100, 220] };
 
+  // Most extra km (straight line) a place may add to the route per night you stay there
+  const DETOUR_PER_NIGHT = 180;
+  // How many km of travel one point of 'how good is this place' is worth when choosing border crossings
+  const KM_PER_POINT = 60;
+
   // Classic overland loop while the Thailand–Cambodia land border is closed
   const COUNTRY_ORDER = ['th', 'la', 'kh', 'vn'];
   const TAG_LABEL = { nature: 'Nature', city: 'City', party: 'Party' };
@@ -171,15 +176,24 @@
     const h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
     return 2 * 6371 * Math.asin(Math.sqrt(h));
   }
+  // Distance by road, roughly. Straight line, except in Cambodia: the road from Siem Reap or Battambang
+  // to the south coast goes round the Tonle Sap lake and the Cardamom Mountains, through Phnom Penh.
+  const PHNOM_PENH = { lat: 11.56, lng: 104.92 };
+  const KH_NORTHWEST = [12.4, 14.6, 102.3, 104.6], KH_COAST = [10.3, 11.2, 103.0, 104.6];
+  const inBox = (p, b) => p.lat > b[0] && p.lat < b[1] && p.lng > b[2] && p.lng < b[3];
+  function dist(a, b) {
+    if ((inBox(a, KH_NORTHWEST) && inBox(b, KH_COAST)) || (inBox(b, KH_NORTHWEST) && inBox(a, KH_COAST))) return km(a, PHNOM_PENH) + km(PHNOM_PENH, b);
+    return km(a, b);
+  }
   function poolEntry(cid, name) { return META[cid].pool.find((p) => p[0] === name); }
   function toStop(p, nights, score) {
     return { place: p[0], tags: p[1], score: score, nights: nights, lat: p[4], lng: p[5], island: p[6], factor: p[7] || 1 };
   }
   // A ground trip from a to b, optionally via a border crossing
   function hop(a, b, style, via, speed) {
-    const dist = via ? km(a, via) + km(via, b) : km(a, b);
+    const d = via ? dist(a, via) + dist(via, b) : dist(a, b);
     const ferry = !!((a.island || b.island) && a.place !== b.place);
-    const hrs = Math.max(1, Math.round(dist * 1.3 / (speed || 45) + (ferry ? 1.5 : 0) + (via ? 1.5 : 0)));
+    const hrs = Math.max(1, Math.round(d * 1.3 / (speed || 45) + (ferry ? 1.5 : 0) + (via ? 1.5 : 0)));
     const usd = (2 + 2.2 * hrs + (ferry ? 12 : 0)) * TRANSPORT_MULT[style];
     return { hrs: hrs, eur: usd / USD_PER_EUR, ferry: ferry };
   }
@@ -199,6 +213,15 @@
     plane: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 13.5L3 11l1.5-1.5 7.5 1L16 6.5c1-1 2.6-1.3 3.3-.6.7.7.4 2.3-.6 3.3l-4 4 1 7.5L14.2 22l-2.5-7.5-3.2 3.2.3 2.3-1.3 1.3-1.5-3.3-3.3-1.5 1.3-1.3 2.3.3z"></path></svg>',
     check: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg>',
     checkDark: '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#14213D" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg>',
+    bus: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="15" rx="3"></rect><path d="M4 11h16M8 18v3M16 18v3"></path></svg>',
+    boat: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15l2 5h14l2-5H3zM6 15V9h12v6M12 9V4M12 4l4 3"></path></svg>',
+    borderDark: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="13" rx="3"></rect><path d="M4 11h16M8 21l1.5-4M16 21l-1.5-4"></path></svg>',
+    planeDark: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 13.5L3 11l1.5-1.5 7.5 1L16 6.5c1-1 2.6-1.3 3.3-.6.7.7.4 2.3-.6 3.3l-4 4 1 7.5L14.2 22l-2.5-7.5-3.2 3.2.3 2.3-1.3 1.3-1.5-3.3-3.3-1.5 1.3-1.3 2.3.3z"></path></svg>',
+    flag: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"></path></svg>',
+    map: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"></path></svg>',
+    fit: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"></path></svg>',
+    chevL: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>',
+    chevR: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>',
     thumbUp: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v9H4v-9h3zM7 11l4-8c1.7 0 3 1.3 3 3v3h5a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 17.8 20H7"></path></svg>',
     thumbDown: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13V4h3v9h-3zM17 13l-4 8c-1.7 0-3-1.3-3-3v-3H5a2 2 0 0 1-2-2.3l1.2-7A2 2 0 0 1 6.2 4H17"></path></svg>'
   };
@@ -229,10 +252,10 @@
   // Order stops as a short path from start to end (nearest neighbour, then 2-opt)
   function orderStops(list, start, end) {
     if (list.length < 2) return list;
-    const d = (p, q) => (p && q ? km(p, q) : 0);
+    const d = (p, q) => (p && q ? dist(p, q) : 0);
     const cost = (seq) => {
       let t = d(start, seq[0]) + d(seq[seq.length - 1], end);
-      for (let i = 0; i < seq.length - 1; i++) t += km(seq[i], seq[i + 1]);
+      for (let i = 0; i < seq.length - 1; i++) t += dist(seq[i], seq[i + 1]);
       return t;
     };
     const rest = list.slice();
@@ -240,13 +263,13 @@
     let cur = start;
     if (!cur) {
       let fi = 0;
-      if (end) rest.forEach((x, i) => { if (km(x, end) > km(rest[fi], end)) fi = i; });
+      if (end) rest.forEach((x, i) => { if (dist(x, end) > dist(rest[fi], end)) fi = i; });
       cur = rest[fi];
       seq.push(rest.splice(fi, 1)[0]);
     }
     while (rest.length) {
       let bi = 0;
-      rest.forEach((x, i) => { if (km(cur, x) < km(cur, rest[bi])) bi = i; });
+      rest.forEach((x, i) => { if (dist(cur, x) < dist(cur, rest[bi])) bi = i; });
       cur = rest[bi];
       seq.push(rest.splice(bi, 1)[0]);
     }
@@ -266,26 +289,28 @@
 
   function pathCost(seq, start, end) {
     if (!seq.length) return 0;
-    let t = (start ? km(start, seq[0]) : 0) + (end ? km(seq[seq.length - 1], end) : 0);
-    for (let i = 0; i < seq.length - 1; i++) t += km(seq[i], seq[i + 1]);
+    let t = (start ? dist(start, seq[0]) : 0) + (end ? dist(seq[seq.length - 1], end) : 0);
+    for (let i = 0; i < seq.length - 1; i++) t += dist(seq[i], seq[i + 1]);
     return t;
   }
 
   // Order a country's stops between how you arrive and how you leave.
   // entry: a crossing point, 'fly' (pick the airport that fits best) or 'arrive' (first country: a big international airport)
   // exit: a crossing point, 'fly' or null (free)
-  function arrange(cid, list, entry, exit) {
-    if (list.length < 2) return list.slice();
-    const starts = entry === 'arrive' ? AIRPORTS[cid].filter((a) => ARRIVAL[cid].indexOf(a.name) >= 0) : (entry === 'fly' ? AIRPORTS[cid] : [entry]);
-    const ends = exit === 'fly' ? AIRPORTS[cid] : [exit];
+  function arrangeFull(cid, list, entry, exit) {
+    const starts = entry === 'arrive' ? AIRPORTS[cid].filter((a) => ARRIVAL[cid].indexOf(a.name) >= 0) : (entry === 'fly' ? AIRPORTS[cid] : [entry || null]);
+    const ends = exit === 'fly' ? AIRPORTS[cid] : [exit || null];
     let best = null;
     starts.forEach((a) => ends.forEach((b) => {
-      const seq = orderStops(list, a, b);
+      // Land at an airport in a city you stay in: you start there
+      const first = a && a.name && typeof entry === 'string' ? list.find((x) => x.place === a.name) : null;
+      const seq = list.length < 2 ? list.slice() : (first ? [first].concat(orderStops(list.filter((x) => x !== first), first, b)) : orderStops(list, a, b));
       const c = pathCost(seq, a, b);
-      if (!best || c < best.c) best = { seq: seq, c: c };
+      if (!best || c < best.c) best = { seq: seq, c: c, a: a, b: b };
     }));
-    return best.seq;
+    return best;
   }
+  function arrange(cid, list, entry, exit) { return arrangeFull(cid, list, entry, exit).seq; }
 
   // How you arrive in and leave a country in the current route
   function routeEnds(s, cid, mode) {
@@ -298,7 +323,13 @@
     };
   }
 
-  function selectStops(s, cid, days, anchors) {
+  // What a place is worth to you, apart from where it lies
+  function placeValue(s, cid, p) {
+    const v = s.vibes, anyVibe = v.nature || v.city || v.party;
+    return p[2] * 2 + (anyVibe ? p[1].filter((t) => v[t]).length * 3 : 0) + (MUST_SEE[cid][p[0]] || 0) * 1.5;
+  }
+
+  function selectStops(s, cid, days, anchors, skip, from, to) {
     const m = META[cid];
     const picked = s.vibes;
     const anyVibe = picked.nature || picked.city || picked.party;
@@ -307,15 +338,22 @@
     const scored = m.pool.map((p, idx) => {
       const matches = p[1].filter((t) => picked[t]).length;
       const pt = { lat: p[4], lng: p[5] };
-      const dist = anchors.length ? Math.min.apply(null, anchors.map((a) => km(a, pt))) : Infinity;
-      // Close to where you enter or leave: bonus. Far away: costs more the shorter your stay
-      const near = anchors.length ? 4 * Math.max(0, 1 - dist / 500) : 0;
-      const far = anchors.length ? dist / (days * 40) : 0;
+      const close = anchors.length ? Math.min.apply(null, anchors.map((a) => km(a, pt))) : Infinity;
+      // How far off the way you go for it: from where you enter to where you leave, or from the one known end
+      let off = close;
+      if (from && from.length && to && to.length) {
+        off = Infinity;
+        from.forEach((a) => to.forEach((b) => { off = Math.min(off, km(a, pt) + km(pt, b) - km(a, b)); }));
+      }
+      // Close to where you enter or leave: bonus. Far off the way: costs more the shorter your stay
+      const near = anchors.length ? 4 * Math.max(0, 1 - close / 500) : 0;
+      const far = anchors.length ? off / (days * 40) : 0;
       const mustLevel = MUST_SEE[cid][p[0]] || 0;
       const base = p[2] * 2 + (anyVibe ? matches * 3 : 0) + near - far + mustLevel * 1.5;
       // The short-stay boost decides which places make it, not how the nights are split
-      return { idx: idx, p: p, pt: pt, min: p[3] || 1, base: base, score: base + mustLevel * 6 * shortness };
-    }).filter((c) => c.min <= days);
+      // Nobody takes the ferry to an island for one night
+      return { idx: idx, p: p, pt: pt, min: Math.max(p[3] || 1, p[6] ? 2 : 1), base: base, score: base + mustLevel * 6 * shortness };
+    }).filter((c) => c.min <= days && !(skip && skip.indexOf(c.p[0]) >= 0));
     const avg = s.pace === 'relaxed' ? 4 : 2.5;
     const n = days <= 3 ? 1 : Math.max(1, Math.min(scored.length, days, Math.round(days / avg)));
     // Pick one at a time; every next place counts for less the further it is from what you already picked
@@ -351,17 +389,56 @@
     const order = COUNTRY_ORDER.filter((c) => s.days[c] > 0);
     const stops = { th: [], kh: [], la: [], vn: [] };
     const arrivalPts = (cid) => AIRPORTS[cid].filter((a) => ARRIVAL[cid].indexOf(a.name) >= 0);
-    order.forEach((cid, i) => { stops[cid] = selectStops(s, cid, s.days[cid], i === 0 ? arrivalPts(cid) : []); });
-    const draft = { order: order, stops: stops };
-    // 1. rough crossings from a first pick; 2. pick again near those crossings and order each country; 3. settle on the real ends
-    const ends1 = {};
-    order.forEach((cid) => { ends1[cid] = routeEnds(draft, cid, 'set'); });
-    order.forEach((cid) => {
-      const e = ends1[cid];
-      const anchors = [e.entry, e.exit].filter((x) => x && typeof x === 'object').concat(e.entry === 'arrive' ? arrivalPts(cid) : []);
-      stops[cid] = arrange(cid, selectStops(s, cid, s.days[cid], anchors), e.entry, e.exit);
+    const pts = (x, cid) => (x === 'arrive' ? arrivalPts(cid) : (x && typeof x === 'object' ? [x] : []));
+    // Every way to cross between the countries: the open land crossings, or a flight when there are none
+    const options = order.slice(0, -1).map((cid, i) => {
+      const next = order[i + 1];
+      const open = CROSSINGS.filter((c) => c.open && c.pair.indexOf(cid) >= 0 && c.pair.indexOf(next) >= 0);
+      return open.length ? open : ['fly'];
     });
-    order.forEach((cid) => { const e = routeEnds(draft, cid, 'path'); stops[cid] = arrange(cid, stops[cid], e.entry, e.exit); });
+    let combos = [[]];
+    options.forEach((opts) => { combos = [].concat.apply([], combos.map((c) => opts.map((o) => c.concat([o])))); });
+    const skip = { th: [], kh: [], la: [], vn: [] };
+    // Try each combination and keep the one with the best places for the least travel
+    const plan = () => {
+      let best = null;
+      combos.forEach((combo) => {
+        let value = 0, travel = 0;
+        const res = {};
+        order.forEach((cid, i) => {
+          const entry = i === 0 ? 'arrive' : combo[i - 1], exit = i < order.length - 1 ? combo[i] : null;
+          const from = pts(entry, cid), to = pts(exit, cid);
+          const list = selectStops(s, cid, s.days[cid], from.concat(to), skip[cid], from, to);
+          res[cid] = arrangeFull(cid, list, entry, exit);
+          list.forEach((x) => { value += placeValue(s, cid, poolEntry(cid, x.place)); });
+          travel += res[cid].c;
+        });
+        const total = value - travel / KM_PER_POINT;
+        if (!best || total > best.total) best = { total: total, res: res };
+      });
+      return best.res;
+    };
+    let ends = plan();
+    for (let round = 0; round < 3; round++) {
+      // A place that costs far more travel than the nights you spend there makes way for another one
+      let dropped = false;
+      order.forEach((cid) => {
+        const r = ends[cid], seq = r.seq;
+        if (seq.length < 2) return;
+        let worst = null;
+        seq.forEach((x, k) => {
+          if ((MUST_SEE[cid][x.place] || 0) >= 2) return;
+          const prev = k > 0 ? seq[k - 1] : r.a, nxt = k < seq.length - 1 ? seq[k + 1] : r.b;
+          const extra = (prev ? dist(prev, x) : 0) + (nxt ? dist(x, nxt) : 0) - (prev && nxt ? dist(prev, nxt) : 0);
+          const perNight = extra / x.nights;
+          if (perNight > DETOUR_PER_NIGHT && (!worst || perNight > worst.v)) worst = { place: x.place, v: perNight };
+        });
+        if (worst) { skip[cid].push(worst.place); dropped = true; }
+      });
+      if (!dropped) break;
+      ends = plan();
+    }
+    order.forEach((cid) => { stops[cid] = ends[cid].seq; });
     return { order: order, stops: stops };
   }
 
@@ -434,7 +511,7 @@
       const why = r.kind === 'closed'
         ? 'All ' + m.name + '–' + nm.name + ' land crossings have been closed since June 2025, with no reopening date (checked Nov 2026). '
         : m.name + ' and ' + nm.name + ' do not share a border. ';
-      return { kind: r.kind, title: r.kind === 'closed' ? 'Land border closed' : 'No land border', name: 'Fly ' + ap1.name + ' → ' + ap2.name,
+      return { kind: r.kind, title: r.kind === 'closed' ? 'Land border closed' : 'No land border', name: 'Fly ' + ap1.name + ' → ' + ap2.name, air: [ap1, ap2],
         info: why + steps.join(', ') + '.', price: 'Flight ≈ €' + fl[0] + '–' + fl[1] + ' one way, cheapest when booked early',
         ground: ground, groundBackpack: groundBackpack, flightLow: fl[0], flightHigh: fl[1], flightMid: (fl[0] + fl[1]) / 2 };
     }
@@ -442,7 +519,7 @@
     const spd = (SPEED[cid] + SPEED[next]) / 2;
     const trip = lastStop && firstNext ? hop(lastStop, firstNext, rs, c, spd) : { hrs: 3, eur: 8 * TRANSPORT_MULT[rs] / USD_PER_EUR, ferry: false };
     const tripBackpack = lastStop && firstNext ? hop(lastStop, firstNext, 'backpack', c, spd) : { eur: 8 / USD_PER_EUR };
-    const out = { kind: 'land', title: 'Border crossing', name: c.names[cid] + ' → ' + c.names[next],
+    const out = { kind: 'land', title: 'Border crossing', name: c.names[cid] + ' → ' + c.names[next], pt: { lat: c.lat, lng: c.lng },
       info: c.note + '. ' + from + ' → border → ' + to + '.',
       price: '≈ ' + trip.hrs + ' hrs' + (trip.ferry ? ' incl. ferry' : '') + ' · ≈ ' + eur(trip.eur) + ' by bus' + (rs === 'backpack' ? '' : ' or transfer') + ', visa not included',
       ground: trip.eur, groundBackpack: tripBackpack.eur, tip: null };
@@ -583,7 +660,8 @@
       sheet: null, copied: false,
       feedback: null, fbText: '', fbDone: null,
       fromLink: false,
-      confirmReset: false
+      confirmReset: false,
+      view: 'list', mapSel: 0
     };
   }
 
@@ -657,7 +735,7 @@
     if (state.fromLink || /[#&]r=/.test(location.hash)) {
       try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* fine */ }
     }
-    update({ screen: 'loading', loadStep: 0, order: r.order, stops: r.stops, routeStyle: state.style, editing: false, adding: null, query: '', fromLink: false, feedback: null, fbText: '', fbDone: null, sheet: null });
+    update({ screen: 'loading', loadStep: 0, order: r.order, stops: r.stops, routeStyle: state.style, view: 'list', mapSel: 0, editing: false, adding: null, query: '', fromLink: false, feedback: null, fbText: '', fbDone: null, sheet: null });
     track('route-generated');
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const step = reduce ? 250 : 700;
@@ -870,7 +948,8 @@
       '<section class="fineprint"><strong>How we estimate costs</strong><span>Daily costs per country and travel style from backpacker budget sources, adjusted for local inflation and the euro–dollar rate, and for each place (islands cost more, small towns less). Buses, ferries and flights between countries are included as estimates. Not included: your flight to and from Asia, visas and big one-off activities like diving courses or the Angkor pass. Travel times are rough estimates from distance. Border status checked November 2026: borders and visa rules change, so always check before you go.</span><span>Prices as of October 2026</span></section>' +
       '<div class="footer-links" style="padding-top:12px"><button data-action="info">About</button><button data-action="info" data-focus="privacy">Privacy</button>' +
         '<button data-action="reset"' + (s.confirmReset ? ' class="danger"' : '') + '>' + (s.confirmReset ? 'Tap again to clear everything' : 'Start over') + '</button></div>' +
-      '<div class="route-end"></div></div>';
+      '<div class="route-end"></div>' +
+      (s.editing ? '' : '<button class="map-fab" data-action="view-map">' + ICON.map + ' Map</button>') + '</div>';
   }
 
   function renderShareSheet() {
@@ -906,6 +985,274 @@
     '</div></div>';
   }
 
+
+  // ---------------------------------------------------------------------------
+  // Map: your route on the real country outlines (geo.js)
+  // ---------------------------------------------------------------------------
+
+  // World units: 100 per degree of longitude, Mercator for latitude. On screen: world × k + t.
+  const wx = (lng) => lng * 100;
+  const wy = (lat) => -Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360)) * 18000 / Math.PI;
+  const LAND_TINT = { th: '#CFE5E1', la: '#D5E8D4', kh: '#F5D5E1', vn: '#FBEBC0' };
+  let landSvg = null;
+  function landPaths() {
+    if (landSvg !== null) return landSvg;
+    landSvg = String(window.BR_GEO || '').split('\n').filter(Boolean).map((line) => {
+      const code = line.slice(0, 2);
+      let x = 0, y = 0;
+      const d = line.slice(3).split(' ').map((pair, i) => {
+        const v = pair.split(',');
+        if (i) { x += +v[0]; y += +v[1]; } else { x = +v[0]; y = +v[1]; }
+        return (i ? 'L' : 'M') + wx(x / 100).toFixed(1) + ' ' + wy(y / 100).toFixed(1);
+      }).join('') + 'Z';
+      return '<path d="' + d + '" fill="' + (LAND_TINT[code] || '#ECE8DE') + '"></path>';
+    }).join('');
+    return landSvg;
+  }
+
+  let mapData = null;                      // stops, lines and borders of the route
+  let mapView = null;                      // { k, tx, ty }
+  let mapKey = '';                         // the route the view belongs to
+  let mapBox = { w: 0, h: 0, top: 0, bottom: 0 };
+  let mapFly = 0, mapFrame = 0, mapFocus = false;
+
+  function buildMapData() {
+    const d = describeRoute(state);
+    const stops = [], lines = [], borders = [];
+    let day = 1;
+    d.legs.forEach((leg, li) => {
+      leg.list.forEach((x, k) => {
+        stops.push({ x: x, cid: leg.cid, leg: leg, k: k, d0: day, d1: day + x.nights - 1 });
+        day += x.nights;
+        if (k > 0) lines.push({ a: leg.list[k - 1], b: x, kind: leg.hops[k - 1].ferry ? 'ferry' : 'bus' });
+      });
+      const b = leg.border, nxt = d.legs[li + 1];
+      if (!b || !nxt || !leg.list.length || !nxt.list.length) return;
+      const last = leg.list[leg.list.length - 1], first = nxt.list[0];
+      if (b.pt) {
+        lines.push({ a: last, b: b.pt, kind: 'bus' }, { a: b.pt, b: first, kind: 'bus' });
+        borders.push(b.pt);
+      } else if (b.air) {
+        if (km(last, b.air[0]) > 15) lines.push({ a: last, b: b.air[0], kind: 'bus' });
+        lines.push({ a: b.air[0], b: b.air[1], kind: 'fly' });
+        if (km(first, b.air[1]) > 15) lines.push({ a: b.air[1], b: first, kind: 'bus' });
+      }
+    });
+    return { stops: stops, lines: lines, borders: borders };
+  }
+  function mapPoints() {
+    return mapData.stops.length ? mapData.stops.map((t) => t.x).concat(mapData.borders) : [{ lat: 8, lng: 98 }, { lat: 23, lng: 110 }];
+  }
+
+  // The view that shows these points in the part of the screen between the top bar and the sheet
+  function fitView(points, maxK) {
+    const pad = 40;
+    const xs = points.map((p) => wx(p.lng)), ys = points.map((p) => wy(p.lat));
+    const x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    const vw = Math.max(80, mapBox.w - 2 * pad), vh = Math.max(80, mapBox.h - mapBox.top - mapBox.bottom - 2 * pad);
+    const k = Math.min(maxK || 4, vw / Math.max(x1 - x0, 1), vh / Math.max(y1 - y0, 1));
+    return { k: k, tx: mapBox.w / 2 - k * (x0 + x1) / 2, ty: mapBox.top + pad + vh / 2 - k * (y0 + y1) / 2 };
+  }
+  // Zoom in on a stop with the one before and after it in view
+  function focusView(i) {
+    const st = mapData.stops;
+    const pts = [st[i].x].concat(st[i - 1] ? [st[i - 1].x] : [], st[i + 1] ? [st[i + 1].x] : []);
+    const all = fitView(mapPoints()), v = fitView(pts, 1.5);
+    return v.k < all.k ? all : v;
+  }
+  function flyTo(target) {
+    cancelAnimationFrame(mapFly);
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !mapView) { mapView = target; drawMap(); return; }
+    const from = mapView, t0 = performance.now();
+    const cx = mapBox.w / 2, cy = mapBox.top + (mapBox.h - mapBox.top - mapBox.bottom) / 2;
+    const a = { x: (cx - from.tx) / from.k, y: (cy - from.ty) / from.k }, b = { x: (cx - target.tx) / target.k, y: (cy - target.ty) / target.k };
+    const step = (now) => {
+      const t = Math.min(1, (now - t0) / 450), e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      const k = Math.exp(Math.log(from.k) + (Math.log(target.k) - Math.log(from.k)) * e);
+      mapView = { k: k, tx: cx - k * (a.x + (b.x - a.x) * e), ty: cy - k * (a.y + (b.y - a.y) * e) };
+      drawMap();
+      mapFly = t < 1 ? requestAnimationFrame(step) : 0;
+    };
+    mapFly = requestAnimationFrame(step);
+  }
+  function requestDraw() { if (!mapFrame) mapFrame = requestAnimationFrame(() => { mapFrame = 0; drawMap(); }); }
+
+  function selectStop(i) {
+    if (!mapData || !mapData.stops.length) return;
+    const n = mapData.stops.length;
+    i = Math.max(0, Math.min(n - 1, i));
+    mapFocus = true;
+    update({ mapSel: i });
+    announce(mapData.stops[i].x.place + ', stop ' + (i + 1) + ' of ' + n);
+  }
+
+  function drawMap() {
+    const v = mapView, md = mapData, land = $('#map-land'), over = $('#map-over');
+    if (!v || !md || !land || !over) return;
+    land.setAttribute('transform', 'matrix(' + v.k + ' 0 0 ' + v.k + ' ' + v.tx.toFixed(1) + ' ' + v.ty.toFixed(1) + ')');
+    const P = (p) => ({ x: wx(p.lng) * v.k + v.tx, y: wy(p.lat) * v.k + v.ty });
+    const f = (n) => n.toFixed(1);
+    let casing = '', lines = '', marks = '', labels = '';
+    md.lines.forEach((l) => {
+      const a = P(l.a), b = P(l.b);
+      if (l.kind === 'fly') {
+        const c = { x: (a.x + b.x) / 2 + (b.y - a.y) * 0.25, y: (a.y + b.y) / 2 - (b.x - a.x) * 0.25 };
+        lines += '<path d="M' + f(a.x) + ' ' + f(a.y) + 'Q' + f(c.x) + ' ' + f(c.y) + ' ' + f(b.x) + ' ' + f(b.y) + '" fill="none" stroke="#14213D" stroke-width="2.4" stroke-dasharray="7 6" stroke-linecap="round"></path>';
+        return;
+      }
+      const seg = 'x1="' + f(a.x) + '" y1="' + f(a.y) + '" x2="' + f(b.x) + '" y2="' + f(b.y) + '"';
+      casing += '<line ' + seg + ' stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"></line>';
+      lines += '<line ' + seg + ' stroke="#14213D" stroke-linecap="round" ' + (l.kind === 'ferry' ? 'stroke-width="3.8" stroke-dasharray="0.1 7"' : 'stroke-width="3"') + '></line>';
+    });
+    md.borders.forEach((b) => {
+      const p = P(b);
+      marks += '<rect x="' + f(p.x - 6) + '" y="' + f(p.y - 6) + '" width="12" height="12" rx="2.5" transform="rotate(45 ' + f(p.x) + ' ' + f(p.y) + ')" fill="#FFFFFF" stroke="#14213D" stroke-width="2.2"></rect>';
+    });
+    const sel = Math.max(0, Math.min(md.stops.length - 1, state.mapSel));
+    const sp = md.stops.map((t) => P(t.x));
+    // Labels go where they fit; markers keep their space free
+    const taken = sp.map((p) => ({ x: p.x - 12, y: p.y - 12, w: 24, h: 24 }));
+    const free = (r) => !taken.some((q) => r.x < q.x + q.w && r.x + r.w > q.x && r.y < q.y + q.h && r.y + r.h > q.y);
+    const bottom = mapBox.h - mapBox.bottom;
+    md.stops.forEach((t, i) => {
+      const p = sp[i], m = META[t.cid], on = i === sel, r = on ? 13 : 10;
+      if (on) marks += '<circle cx="' + f(p.x) + '" cy="' + f(p.y) + '" r="24" fill="' + m.color + '" fill-opacity="0.22"></circle>';
+      marks += '<circle cx="' + f(p.x) + '" cy="' + f(p.y) + '" r="' + r + '" fill="' + m.color + '" stroke="#FFFFFF" stroke-width="2.5"></circle>' +
+        '<text x="' + f(p.x) + '" y="' + f(p.y + (on ? 4.3 : 3.6)) + '" text-anchor="middle" font-size="' + (on ? 12 : 10) + '" font-weight="700" fill="' + m.ink + '">' + (i + 1) + '</text>';
+    });
+    if (md.stops.length) {
+      const p = sp[sel], name = md.stops[sel].x.place, w = name.length * 8 + 26;
+      const r = { x: p.x - w / 2, y: p.y - 52, w: w, h: 30 };
+      taken.push(r);
+      labels += '<rect x="' + f(r.x) + '" y="' + f(r.y) + '" width="' + f(w) + '" height="30" rx="15" fill="#14213D"></rect>' +
+        '<text x="' + f(p.x) + '" y="' + f(r.y + 20) + '" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">' + esc(name) + '</text>';
+    }
+    const order = md.stops.map((t, i) => i).filter((i) => i !== sel)
+      .sort((a, b) => (Math.abs(a - sel) === 1 ? 0 : 1) - (Math.abs(b - sel) === 1 ? 0 : 1) || (md.stops[b].x.score || 0) - (md.stops[a].x.score || 0));
+    order.forEach((i) => {
+      const p = sp[i], name = md.stops[i].x.place, w = name.length * 6.9 + 4;
+      if (p.x < -60 || p.x > mapBox.w + 60 || p.y < mapBox.top - 10 || p.y > bottom + 10) return;
+      const tries = [{ x: p.x + 15, y: p.y - 9, a: 'start' }, { x: p.x - 15 - w, y: p.y - 9, a: 'end' }, { x: p.x - w / 2, y: p.y + 14, a: 'middle' }];
+      const spot = tries.find((c) => free({ x: c.x, y: c.y, w: w, h: 18 }) && c.x > 4 && c.x + w < mapBox.w - 4 && c.y > mapBox.top && c.y + 18 < bottom);
+      if (!spot) return;
+      taken.push({ x: spot.x, y: spot.y, w: w, h: 18 });
+      const tx = spot.a === 'start' ? spot.x : (spot.a === 'end' ? spot.x + w : spot.x + w / 2);
+      labels += '<text x="' + f(tx) + '" y="' + f(spot.y + 13) + '" text-anchor="' + spot.a + '" font-size="12" font-weight="600" fill="#14213D" stroke="#FFFFFF" stroke-width="3.5" stroke-linejoin="round" paint-order="stroke">' + esc(name) + '</text>';
+    });
+    over.innerHTML = casing + lines + marks + labels;
+  }
+
+  function stopAt(pt) {
+    if (!mapData || !mapView) return -1;
+    let best = -1, bestD = 26;
+    mapData.stops.forEach((t, i) => {
+      const d = Math.hypot(wx(t.x.lng) * mapView.k + mapView.tx - pt.x, wy(t.x.lat) * mapView.k + mapView.ty - pt.y);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    return best;
+  }
+
+  // Drag to move, pinch or scroll to zoom, tap a stop to open it
+  function bindMap(svg) {
+    const pts = new Map();
+    let downAt = null, travel = 0;
+    const rel = (e) => { const r = svg.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const zoomAt = (p, factor) => {
+      const k = Math.max(0.12, Math.min(14, mapView.k * factor)), g = k / mapView.k;
+      mapView = { k: k, tx: p.x - (p.x - mapView.tx) * g, ty: p.y - (p.y - mapView.ty) * g };
+    };
+    svg.addEventListener('pointerdown', (e) => {
+      cancelAnimationFrame(mapFly); mapFly = 0;
+      try { svg.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
+      pts.set(e.pointerId, rel(e));
+      if (pts.size === 1) { downAt = rel(e); travel = 0; } else travel = 99;
+    });
+    svg.addEventListener('pointermove', (e) => {
+      if (!pts.has(e.pointerId) || !mapView) return;
+      const prev = pts.get(e.pointerId), cur = rel(e);
+      if (pts.size === 1) mapView = { k: mapView.k, tx: mapView.tx + cur.x - prev.x, ty: mapView.ty + cur.y - prev.y };
+      else {
+        let other = null;
+        pts.forEach((p, id) => { if (id !== e.pointerId) other = p; });
+        const d0 = Math.hypot(prev.x - other.x, prev.y - other.y), d1 = Math.hypot(cur.x - other.x, cur.y - other.y);
+        const m0 = { x: (prev.x + other.x) / 2, y: (prev.y + other.y) / 2 }, m1 = { x: (cur.x + other.x) / 2, y: (cur.y + other.y) / 2 };
+        if (d0 > 0) zoomAt(m0, d1 / d0);
+        mapView = { k: mapView.k, tx: mapView.tx + m1.x - m0.x, ty: mapView.ty + m1.y - m0.y };
+      }
+      travel += Math.hypot(cur.x - prev.x, cur.y - prev.y);
+      pts.set(e.pointerId, cur);
+      requestDraw();
+    });
+    const up = (e) => {
+      if (!pts.has(e.pointerId)) return;
+      pts.delete(e.pointerId);
+      if (e.type === 'pointerup' && !pts.size && travel < 8 && downAt) { const i = stopAt(downAt); if (i >= 0) selectStop(i); }
+    };
+    svg.addEventListener('pointerup', up);
+    svg.addEventListener('pointercancel', up);
+    svg.addEventListener('wheel', (e) => { e.preventDefault(); if (!mapView) return; cancelAnimationFrame(mapFly); mapFly = 0; zoomAt(rel(e), Math.exp(-e.deltaY * 0.0015)); requestDraw(); }, { passive: false });
+  }
+
+  function measureMap() {
+    const svg = $('#map-svg');
+    if (!svg) return null;
+    const r = svg.getBoundingClientRect(), top = $('.map-top'), sheet = $('.map-sheet');
+    mapBox = { w: r.width, h: r.height, top: top ? top.getBoundingClientRect().bottom - r.top + 8 : 64, bottom: sheet ? r.bottom - sheet.getBoundingClientRect().top : 300 };
+    return svg;
+  }
+
+  function initMap() {
+    const svg = measureMap();
+    if (!svg) return;
+    $('#map-land').innerHTML = landPaths();
+    const key = state.order.join() + '|' + mapData.stops.map((t) => t.x.place).join('|');
+    if (!mapView || key !== mapKey) { mapKey = key; mapView = fitView(mapPoints()); }
+    drawMap();
+    bindMap(svg);
+    if (mapFocus && mapData.stops.length) { mapFocus = false; flyTo(focusView(Math.max(0, Math.min(mapData.stops.length - 1, state.mapSel)))); }
+    const chip = $('.map-chip[aria-current="true"]'), strip = $('.map-chips');
+    if (chip && strip) strip.scrollLeft = chip.offsetLeft - strip.clientWidth / 2 + chip.offsetWidth / 2;
+  }
+
+  function renderMap() {
+    mapData = buildMapData();
+    const st = mapData.stops, n = st.length;
+    const i = Math.max(0, Math.min(n - 1, state.mapSel || 0));
+    let sheet;
+    if (!n) sheet = '<p class="map-empty">No stops yet. Go back to the list to add places.</p>';
+    else {
+      const t = st[i], m = META[t.cid], x = t.x, leg = t.leg;
+      const perDay = m.rates[state.routeStyle] * (x.factor || 1);
+      let next;
+      if (t.k < leg.list.length - 1) {
+        const h = leg.hops[t.k];
+        next = (h.ferry ? ICON.boat : ICON.bus) + '<span><strong>Next: ' + esc(leg.list[t.k + 1].place) + '</strong> · ' + (h.ferry ? 'Ferry + bus' : 'Bus') + ' ≈ ' + h.hrs + (h.hrs === 1 ? ' hr' : ' hrs') + ' · ' + eur(h.eur) + '</span>';
+      } else if (leg.border) {
+        const b = leg.border;
+        next = b.kind === 'land'
+          ? ICON.borderDark + '<span><strong>Next: border ' + esc(b.name) + '</strong> · ' + esc(b.price.replace(/, visa not included$/, '')) + '</span>'
+          : ICON.planeDark + '<span><strong>Next: ' + esc(b.name) + '</strong> · flight ≈ €' + b.flightLow + '–' + b.flightHigh + '</span>';
+      } else next = ICON.flag + '<span><strong>Last stop of your trip</strong></span>';
+      sheet = '<div class="map-meta"><span class="map-country"><span class="map-badge" style="background:' + m.color + ';color:' + m.ink + '">' + m.code + '</span>' + m.name + ' · ' + leg.range + '</span><span>Stop ' + (i + 1) + ' of ' + n + '</span></div>' +
+        '<h2 class="map-name">' + esc(x.place) + '</h2>' +
+        '<span class="map-sub">' + x.nights + (x.nights === 1 ? ' night' : ' nights') + ' · Day ' + t.d0 + (t.d1 > t.d0 ? '–' + t.d1 : '') + ' · ≈ ' + eur(perDay) + ' a day here</span>' +
+        '<div class="map-next">' + next + '</div>' +
+        '<div class="map-strip"><button class="map-step" data-action="map-prev" aria-label="Previous stop"' + (i === 0 ? ' disabled' : '') + '>' + ICON.chevL + '</button>' +
+          '<div class="map-chips">' + st.map((u, j) => '<button class="map-chip" data-action="map-sel" data-k="' + j + '"' + (j === i ? ' aria-current="true"' : '') + '>' +
+            '<span class="map-num" style="background:' + META[u.cid].color + ';color:' + META[u.cid].ink + '">' + (j + 1) + '</span>' + esc(u.x.place) + '</button>').join('') + '</div>' +
+          '<button class="map-step" data-action="map-next" aria-label="Next stop"' + (i === n - 1 ? ' disabled' : '') + '>' + ICON.chevR + '</button></div>';
+    }
+    return '<div class="map-screen" role="dialog" aria-modal="true" aria-label="Map of your route">' +
+      '<svg id="map-svg" class="map-svg" role="img" aria-label="Map of your route with ' + n + ' stops. Use the list of stops below to go through them."><rect width="100%" height="100%" fill="#D3E5EE"></rect><g id="map-land"></g><g id="map-over"></g></svg>' +
+      '<div class="map-top"><button class="map-round" data-action="view-list" aria-label="Back to the list">' + ICON.arrowL + '</button>' +
+        '<div class="seg" role="group" aria-label="View"><button data-action="view-list" aria-pressed="false">List</button><button data-action="map-fit" aria-pressed="true">Map</button></div>' +
+        '<button class="map-round" data-action="map-fit" aria-label="Show the whole route">' + ICON.fit + '</button></div>' +
+      '<section class="map-sheet" aria-label="Stop details">' + sheet + '</section></div>';
+  }
+  // A turned phone or a resized window: show the whole route again
+  window.addEventListener('resize', () => { if (measureMap() && mapData) { cancelAnimationFrame(mapFly); mapFly = 0; mapView = fitView(mapPoints()); drawMap(); } });
+
   // Re-render while keeping focus and cursor where they were
   function render() {
     const app = $('#app');
@@ -918,7 +1265,10 @@
     app.innerHTML = state.screen === 'plan' ? renderPlan() : (state.screen === 'loading' ? renderLoading() : renderRoute());
     const sheetRoot = $('#sheet-root');
     sheetRoot.innerHTML = state.sheet === 'share' ? renderShareSheet() : (state.sheet === 'info' ? renderInfoSheet() : '');
-    document.body.style.overflow = state.sheet ? 'hidden' : '';
+    const mapOpen = state.screen === 'route' && state.view === 'map';
+    $('#map-root').innerHTML = mapOpen ? renderMap() : '';
+    document.body.style.overflow = state.sheet || mapOpen ? 'hidden' : '';
+    if (mapOpen) initMap();
 
     let target = null;
     if (focusId) target = document.getElementById(focusId);
@@ -973,7 +1323,13 @@
         announce('Cleared. You can start a new route.');
         break;
       }
-      case 'back': clearTimers(); update({ screen: 'plan', fromLink: false, sheet: null, editing: false, adding: null }); break;
+      case 'back': clearTimers(); update({ screen: 'plan', fromLink: false, sheet: null, editing: false, adding: null, view: 'list' }); break;
+      case 'view-map': mapFocus = false; update({ view: 'map', editing: false, adding: null }); track('map-opened'); { const b = $('.seg [data-action="view-list"]'); if (b) b.focus(); } break;
+      case 'view-list': update({ view: 'list' }); { const b = $('.map-fab'); if (b) b.focus({ preventScroll: true }); } break;
+      case 'map-sel': selectStop(k); break;
+      case 'map-prev': selectStop(s.mapSel - 1); break;
+      case 'map-next': selectStop(s.mapSel + 1); break;
+      case 'map-fit': if (mapData && mapData.stops.length) flyTo(fitView(mapPoints())); break;
       case 'info': {
         update({ sheet: 'info' });
         const focus = el.dataset.focus ? document.getElementById(el.dataset.focus) : null;
@@ -1065,7 +1421,7 @@
       for (let i = 0; i <= l.length; i++) {
         const prev = i === 0 ? ends.start : l[i - 1];
         const nxt = i === l.length ? ends.end : l[i];
-        const add = (prev ? km(prev, item) : 0) + (nxt ? km(item, nxt) : 0) - (prev && nxt ? km(prev, nxt) : 0);
+        const add = (prev ? dist(prev, item) : 0) + (nxt ? dist(item, nxt) : 0) - (prev && nxt ? dist(prev, nxt) : 0);
         if (add < bestAdd) { bestAdd = add; at = i; }
       }
       l.splice(at, 0, item);
@@ -1133,6 +1489,10 @@
   }
 
   function onKeydown(e) {
+    if (state.screen === 'route' && state.view === 'map' && !state.sheet) {
+      if (e.key === 'Escape') { update({ view: 'list' }); const b = $('.map-fab'); if (b) b.focus({ preventScroll: true }); return; }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); selectStop(state.mapSel + (e.key === 'ArrowLeft' ? -1 : 1)); return; }
+    }
     if (e.key === 'Escape') {
       if (state.sheet) { update({ sheet: null }); return; }
       if (state.adding) { const cid = state.adding; update({ adding: null, query: '' }); const b = document.querySelector('[data-action="add-toggle"][data-cid="' + cid + '"]'); if (b) b.focus(); return; }

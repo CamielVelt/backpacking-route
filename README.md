@@ -12,10 +12,12 @@ Built by Camiel Velt, with AI (Claude) as coding partner, while getting ready to
 
 - Builds a route from your days, pace (relaxed / active) and interests (nature, city, party)
 - Orders each country as a short path from the border where you enter to the border where you leave
+- Tries every combination of border crossings and keeps the one with the best places for the least travel; drops places that cost far more travel than the nights you stay (no island for one night)
 - Chooses from 14 real land crossings, and warns when a border is closed (Thailand–Cambodia, closed since June 2025, checked November 2026)
 - Estimates daily costs per country and travel style, adjusted for inflation and the euro–dollar rate
 - Budget check with savings tips you can apply in one tap
 - Customize: move, remove and add places (search the top 15 per country)
+- Map view: your route on real country outlines, with numbered stops, a timeline of stops and the next bus, ferry, border or flight; drag, pinch and tap a stop
 - Share your route as a link that opens the exact same route
 - Works offline and can be installed on your home screen (PWA)
 
@@ -25,7 +27,8 @@ Built by Camiel Velt, with AI (Claude) as coding partner, while getting ready to
 |---|---|
 | `index.html` | The page |
 | `styles.css` | The look |
-| `app.js` | All app logic: places, costs, crossings, route builder, sharing |
+| `app.js` | All app logic: places, costs, crossings, route builder, map, sharing |
+| `geo.js` | Country outlines for the map (Natural Earth, simplified) |
 | `config.js` | Your settings: feedback form and visitor stats |
 | `sw.js` | Service worker, makes the app work offline |
 | `manifest.webmanifest` | Name, colours and icons for "Add to Home Screen" |
@@ -59,5 +62,6 @@ Every time you change a file, raise `CACHE_VERSION` in `sw.js` (for example `br-
 
 Costs: backpacker budget from Hostelz (2026); mid-range and luxury totals from 2026 travel budget guides, split by category as an estimate. Each place has a price factor against the country average (islands and Siem Reap higher, the north of Thailand and rural towns lower), based on 2026 city-level budget guides.
 Getting around: about $2 per hour of bus travel plus a small base fare, about $12 extra for a ferry, with a separate average road speed per country. Regional flights: €40–110 one way (backpack), based on 2026 fare searches.
+Map: country outlines from Natural Earth 1:50m (public domain), simplified. Distances are straight lines, except in Cambodia, where the road from Siem Reap to the south coast goes through Phnom Penh.
 Inflation: national figures for 2026. Border status: news and government travel advice, checked November 2026.
 All numbers are estimates to help you plan. Always check borders, visas and prices before you go.

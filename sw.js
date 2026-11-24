@@ -1,12 +1,13 @@
 // Service worker: keeps the app working offline.
 // Raise CACHE_VERSION every time you change a file, so phones fetch the new version.
-const CACHE_VERSION = 'br-v7';
+const CACHE_VERSION = 'br-v8';
 const APP_FILES = [
   './',
   './index.html',
   './styles.css',
   './config.js',
   './app.js',
+  './geo.js',
   './manifest.webmanifest',
   './fonts/Inter-Regular.woff',
   './fonts/Inter-SemiBold.woff',
