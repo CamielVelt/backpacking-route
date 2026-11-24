@@ -22,7 +22,7 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
 body {
   margin: 0;
   background: #E9E7E1;
@@ -34,6 +34,10 @@ body {
 }
 button, input, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
+/* Quick taps count as taps, not as double-tap zoom. Pinch zoom keeps working. */
+button, a, input, textarea, label, .pill, .step, .mini { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button:not(:disabled):active, .btn-wa:active { transform: scale(0.96); transition: transform 60ms ease-out; }
+@media (prefers-reduced-motion: reduce) { button:not(:disabled):active, .btn-wa:active { transform: none; opacity: 0.8; } }
 button:disabled { cursor: not-allowed; }
 a { color: var(--ink); }
 :focus-visible { outline: 3px solid #2F6FEB; outline-offset: 2px; }
